@@ -32,4 +32,8 @@ class AuthService {
   }
 
   User? get currentUser => _auth.currentUser;
+
+  get userStream => null;
+
+  bool? get isInitialLoading => null;
 }
