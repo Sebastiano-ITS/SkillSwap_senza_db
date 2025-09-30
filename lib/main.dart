@@ -24,21 +24,14 @@ const FirebaseOptions webDefaultOptions = FirebaseOptions(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ------------------------------------------------------------------
-  //  PUNTO CHIAVE: INIZIALIZZAZIONE FIREBASE CORRETTA
-  // ------------------------------------------------------------------
   try {
-    // Inizializza Firebase usando l'oggetto options corretto
     await Firebase.initializeApp(
       options: webDefaultOptions,
     );
-
     print("Firebase è stato inizializzato con successo.");
   } catch (e) {
     print("Errore nell'inizializzazione di Firebase: $e");
-    // Gestisci l'errore o notifica l'utente
   }
-  // ------------------------------------------------------------------
 
   runApp(const SkillSwapApp());
 }
@@ -50,19 +43,13 @@ class SkillSwapApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 1. Fornisce l'istanza di AuthService
-        // AuthService non deve essere un ChangeNotifier se usi lo StreamProvider
         Provider<AuthService>(
           create: (_) => AuthService(),
         ),
-        // 2. Fornisce l'istanza di FirestoreService
         Provider<FirestoreService>(
           create: (_) => FirestoreService(),
         ),
-        // 3. Ascolta lo stato dell'utente (login/logout)
-        // Questo è il modo standard e pulito di usare Provider con Firebase Auth.
         StreamProvider<User?>(
-          // L'AuthService deve esporre uno stream chiamato userStream
           create: (context) => context.read<AuthService>().userStream,
           initialData: null,
           catchError: (context, error) => null,
@@ -76,11 +63,11 @@ class SkillSwapApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
           scaffoldBackgroundColor: const Color(0xFFF5F5F9),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF673AB7), // Viola scuro
+            backgroundColor: Color(0xFF673AB7),
             foregroundColor: Colors.white,
           ),
           colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.deepPurple).copyWith(
-            secondary: const Color(0xFFFF9800), // Arancione (Accent Color)
+            secondary: const Color(0xFFFF9800),
           ),
           fontFamily: 'Inter',
         ),
@@ -90,20 +77,16 @@ class SkillSwapApp extends StatelessWidget {
   }
 }
 
-// Wrapper per decidere se mostrare la schermata di Auth o il MainLayout
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Legge lo stato dell'utente dallo StreamProvider in modo reattivo
     final firebaseUser = context.watch<User?>();
-
-    // Controlla il caricamento iniziale (necessita di una variabile in AuthService)
-    // Se l'utente è null E non è ancora terminato il caricamento iniziale dell'AuthService, mostra il loader.
     final authService = context.watch<AuthService>();
 
-    if (firebaseUser == null && authService.isInitialLoading) {
+    // CORREZIONE: Usiamo ?? false per gestire la nullità di isInitialLoading
+    if (firebaseUser == null && (authService.isInitialLoading ?? true)) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -111,13 +94,10 @@ class AuthWrapper extends StatelessWidget {
       );
     }
 
-    // Se l'utente è loggato, mostra il layout principale.
     if (firebaseUser != null) {
-      // Passiamo l'UID (che è garantito non nullo qui)
       return MainLayout(userId: firebaseUser.uid);
-    }
-
-    // Altrimenti, mostra la schermata di autenticazione.
+    } 
+    
     return const AuthScreen();
   }
 }
