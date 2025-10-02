@@ -47,7 +47,9 @@ class _MainLayoutState extends State<MainLayout> {
         // Caso 2: Profilo completo -> Layout Principale con TabBar
         final List<Widget> children = [
           HomeScreen(currentUserProfile: userProfile),
-          ProfileScreen(userProfile: userProfile),
+          // ProfileScreen NON richiede userProfile (si auto-carica)
+          const ProfileScreen(),
+          // *** CORREZIONE: SettingsScreen richiede userProfile ***
           SettingsScreen(userProfile: userProfile),
         ];
 

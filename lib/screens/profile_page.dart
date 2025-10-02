@@ -7,7 +7,7 @@ class UserProfile {
   final List<String> canTeach;
   final List<String> wantsToLearn;
   final bool onboardingCompleted;
-  final double hourlyRate; // Necessario per la MatchScreen
+  final double hourlyRate;
 
   UserProfile({
     required this.userId,
@@ -16,32 +16,38 @@ class UserProfile {
     required this.canTeach,
     required this.wantsToLearn,
     this.onboardingCompleted = false,
-    this.hourlyRate = 15.0, // Valore predefinito in €/ora
+    this.hourlyRate = 15.0,
   });
 
   // Factory method per creare un UserProfile da un DocumentSnapshot di Firestore
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
 
+    // Se i dati sono null (documento non esiste), forniamo un profilo di fallback
     if (data == null) {
-      // Fornisci un profilo di fallback se i dati sono mancanti o vuoti
       return UserProfile(
-        userId: doc.id, 
-        email: 'N/A', 
-        name: 'Utente Sconosciuto', 
-        canTeach: [], 
-        wantsToLearn: []
+          userId: doc.id,
+          email: 'Email non disponibile', // Fallback
+          name: 'Nuovo Utente', // Fallback
+          canTeach: [],
+          wantsToLearn: []
       );
     }
 
+    // Estrazione dei campi con fallback se mancanti o null
     return UserProfile(
-      userId: data['uid'] ?? doc.id,
-      email: data['email'] ?? 'N/A',
-      name: data['name'] ?? 'Utente Sconosciuto',
+      // Usiamo l'ID del documento se 'uid' non è presente
+      userId: data['uid'] as String? ?? doc.id,
+
+      // Se il campo 'email' è null, usiamo 'Email non disponibile'.
+      email: data['email'] as String? ?? 'Email non disponibile',
+
+      // Se il campo 'name' è null o mancante, usiamo 'Nuovo Utente'.
+      name: data['name'] as String? ?? 'Nuovo Utente',
+
       canTeach: List<String>.from(data['canTeach'] ?? []),
       wantsToLearn: List<String>.from(data['wantsToLearn'] ?? []),
-      onboardingCompleted: data['onboardingCompleted'] ?? false,
-      // Gestisce sia int che double per la tariffa
+      onboardingCompleted: data['onboardingCompleted'] as bool? ?? false,
       hourlyRate: (data['hourlyRate'] is num) ? data['hourlyRate'].toDouble() : 15.0,
     );
   }

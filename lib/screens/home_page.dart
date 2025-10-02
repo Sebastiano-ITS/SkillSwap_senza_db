@@ -1,5 +1,7 @@
+// home_page.dart
 import 'package:flutter/material.dart';
-import 'profile_page.dart';
+
+import '/screens/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,7 +13,8 @@ class _HomePageState extends State<HomePage> {
 
   final List<Widget> _pages = [
     Center(child: Text('Benvenuto nella Home!', style: TextStyle(fontSize: 20))),
-    ProfilePage(),
+    // Ora il compilatore conosce ProfilePage grazie all'import
+
   ];
 
   void _onItemTapped(int index) {

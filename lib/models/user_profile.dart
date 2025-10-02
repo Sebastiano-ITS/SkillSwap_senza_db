@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart'; // Importato per il tipo DocumentSnapshot
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserProfile {
   final String userId;
@@ -7,7 +7,7 @@ class UserProfile {
   final List<String> canTeach;
   final List<String> wantsToLearn;
   final bool onboardingCompleted;
-  final double hourlyRate; 
+  final double hourlyRate;
 
   UserProfile({
     required this.userId,
@@ -16,38 +16,39 @@ class UserProfile {
     required this.canTeach,
     required this.wantsToLearn,
     this.onboardingCompleted = false,
-    this.hourlyRate = 15.0, // Valore predefinito in €/ora
+    this.hourlyRate = 15.0,
   });
 
   // Factory method per creare un UserProfile da un DocumentSnapshot di Firestore
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
-    // Usiamo Map<String, dynamic> per la massima sicurezza sul tipo di dato
     final data = doc.data() as Map<String, dynamic>?;
 
-    // Se i dati sono nulli, restituisci un profilo di fallback minimo.
+    // Se i dati sono null (documento non esiste), forniamo un profilo di fallback
     if (data == null) {
       return UserProfile(
-        userId: doc.id, 
-        email: 'N/A', 
-        name: 'Utente Sconosciuto', 
-        canTeach: const [], // Usa const [] per liste vuote
-        wantsToLearn: const []
+          userId: doc.id,
+          email: 'Email non disponibile', // Fallback
+          name: 'Nuovo Utente', // Fallback
+          canTeach: [],
+          wantsToLearn: []
       );
     }
 
+    // Estrazione dei campi con fallback se mancanti o null
     return UserProfile(
-      // Usiamo data['uid'] come fallback doc.id se presente
+      // Usiamo l'ID del documento se 'uid' non è presente
       userId: data['uid'] as String? ?? doc.id,
-      email: data['email'] as String? ?? 'N/A',
-      name: data['name'] as String? ?? 'Utente Sconosciuto',
-      // Ci assicuriamo che i campi lista siano list<String> con un fallback a lista vuota
-      canTeach: List<String>.from(data['canTeach'] as List? ?? const []),
-      wantsToLearn: List<String>.from(data['wantsToLearn'] as List? ?? const []),
-      
+
+      // Se il campo 'email' è null, usiamo 'Email non disponibile'.
+      email: data['email'] as String? ?? 'Email non disponibile',
+
+      // Se il campo 'name' è null o mancante, usiamo 'Nuovo Utente'.
+      name: data['name'] as String? ?? 'Nuovo Utente',
+
+      canTeach: List<String>.from(data['canTeach'] ?? []),
+      wantsToLearn: List<String>.from(data['wantsToLearn'] ?? []),
       onboardingCompleted: data['onboardingCompleted'] as bool? ?? false,
-      
-      // Gestisce double/int da Firestore con fallback sicuro
-      hourlyRate: (data['hourlyRate'] is num) ? (data['hourlyRate'] as num).toDouble() : 15.0,
+      hourlyRate: (data['hourlyRate'] is num) ? data['hourlyRate'].toDouble() : 15.0,
     );
   }
 
