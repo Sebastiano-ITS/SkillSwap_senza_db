@@ -1,91 +1,68 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
-// Import necessario per accedere all'utente autenticato
-import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_profile.dart';
+import '../models/user_profile.dart'; 
+import '../models/match_request.dart'; // IMPORT NECESSARIO
 
-// --- Variabili di Configurazione ---
-// ATTENZIONE: Se stai usando la struttura /artifacts/{appId}/public/data/users,
-// tutti possono leggere/scrivere. Per dati privati, dovresti usare
-// /artifacts/{appId}/users/{userId}/...
-const String _appId = '1:476854991127:web:a88a3ee55915a40bffdf52';
-const String _baseCollectionPath = 'artifacts/$_appId/public/data/users';
-// -----------------------------------
+// Assumiamo che queste variabili siano state inizializzate nel tuo ambiente Flutter/Firebase
+final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+// Variabile globale per l'ID dell'app, essenziale per la sicurezza di Firestore
+const String __app_id = 'skillswap-gemini-app'; // Sostituisci con il tuo ID reale se necessario
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  // Istanza di autenticazione per leggere l'ID utente corrente
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // Riferimento alla collezione utenti basato sul percorso complesso
-  CollectionReference get _userCollection => _db.collection(_baseCollectionPath);
-
-  // *CRITICO*: GETTER PER L'ID UTENTE (LEGGE DA FIREBASE AUTH)
-  String? get currentUserId {
-    // Restituisce l'UID dell'utente correntemente loggato
-    return _auth.currentUser?.uid;
-  }
-
-  // --- Metodi di Lettura ---
-
-  // Recupero singolo profilo (Future)
-  Future<UserProfile?> getUserProfile(String userId) async {
-    try {
-      final doc = await _userCollection.doc(userId).get();
-      if (doc.exists && doc.data() != null) {
-        // userProfile deve avere un fromFirestore che accetta DocumentSnapshot
-        return UserProfile.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Errore durante il recupero del profilo $userId: $e');
-      // Non rilanciare qui, ma se l'hai fatto nel codice originale, lascio.
-      rethrow;
-    }
-  }
-
-  // Stream in tempo reale per un singolo utente
-  Stream<UserProfile?> streamUserProfile(String userId) {
-    // Aggiungo un cast per sicurezza, assumendo che UserProfile.fromFirestore
-    // accetti DocumentSnapshot<Map<String, dynamic>>
-    return _userCollection.doc(userId).snapshots().map((snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        return UserProfile.fromFirestore(snapshot as DocumentSnapshot<Map<String, dynamic>>);
-      }
-      return null;
-    });
-  }
-
-  // Stream di tutti gli utenti (utile per matching/elenco)
+  // Metodo per ottenere tutti i profili utente in tempo reale
   Stream<List<UserProfile>> streamAllUsers() {
-    return _userCollection.snapshots().map((snapshot) {
-      return snapshot.docs
-          .where((doc) => doc.data() != null)
-          .map((doc) => UserProfile.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
-          .where((profile) => profile.onboardingCompleted && profile.name.isNotEmpty)
-          .toList();
+    // Percorso della collezione pubblica come definito dalle regole di sicurezza
+    final userProfileCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles');
+    
+    return userProfileCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => UserProfile.fromFirestore(doc)).toList();
+    });
+  }
+  
+  // Metodo per ottenere un singolo profilo utente
+  Stream<UserProfile?> streamUserProfile(String userId) {
+    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles').doc(userId);
+    
+    return docRef.snapshots().map((snapshot) {
+      if (!snapshot.exists || snapshot.data() == null) {
+        return null;
+      }
+      return UserProfile.fromFirestore(snapshot);
     });
   }
 
-  // --- Metodi di Scrittura ---
+  // Metodo per salvare o aggiornare un profilo (usato in Onboarding)
+  Future<void> saveUserProfile(UserProfile user) async {
+    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles').doc(user.userId);
+    await docRef.set(user.toMap(), SetOptions(merge: true));
+  }
 
-  // Crea o aggiorna il profilo di un utente
-  Future<void> saveUserProfile(UserProfile profile) async {
-    // Aggiungiamo un controllo per sicurezza
-    final userId = currentUserId;
-    if (userId == null || profile.userId != userId) {
-      debugPrint('ATTENZIONE: Tentativo di salvare un profilo senza utente autenticato o con ID non corrispondente.');
-      return;
-    }
+  // --- NUOVI METODI PER LA GESTIONE DELLE RICHIESTE ---
+  
+  // 1. Invia una richiesta di match
+  Future<void> sendMatchRequest(MatchRequest request) async {
+    final requestCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests'); 
+    await requestCollection.add(request.toMap());
+  }
 
-    try {
-      await _userCollection
-          .doc(profile.userId)
-          .set(profile.toMap(), SetOptions(merge: true));
-      debugPrint('Profilo utente ${profile.userId} salvato con successo.');
-    } catch (e) {
-      debugPrint('Errore nel salvataggio del profilo per ${profile.userId}: $e');
-      rethrow;
-    }
+  // 2. Ottieni le richieste ricevute in tempo reale per un dato ricevente
+  Stream<List<MatchRequest>> streamReceivedRequests(String receiverId) {
+    final requestCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests'); 
+    
+    // Filtra per il destinatario e mostra solo quelle NON ancora accettate
+    return requestCollection
+        .where('receiverId', isEqualTo: receiverId)
+        .where('accepted', isEqualTo: false) // Mostra solo quelle in sospeso
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) => MatchRequest.fromFirestore(doc)).toList();
+        });
+  }
+
+  // 3. Aggiorna lo stato di una richiesta (es. accettarla)
+  Future<void> updateRequestStatus(String requestId, bool accepted) async {
+    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests').doc(requestId);
+    await docRef.update({'accepted': accepted, 'acceptanceTimestamp': FieldValue.serverTimestamp()});
   }
 }

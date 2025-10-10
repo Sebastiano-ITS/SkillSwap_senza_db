@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-// Devi avere questi due import corretti nel tuo progetto
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 
 class ProfileScreen extends StatelessWidget {
-  // Rimuoviamo il parametro 'userProfile' non necessario.
-  // La screen deve solo sapere chi è l'utente corrente tramite Provider/Auth.
-  const ProfileScreen({super.key});
+  // L'userProfile iniziale serve solo come fallback e per ottenere l'ID utente
+  final UserProfile userProfile;
+  const ProfileScreen({super.key, required this.userProfile});
 
   // Funzione helper per visualizzare il rate correttamente
   String _displayRate(dynamic rate) {
@@ -41,18 +40,22 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 20),
-            skills.isEmpty
-                ? Text('Nessuna competenza selezionata.', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey.shade600))
-                : Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: skills.map((skill) => Chip(
-                label: Text(skill),
-                backgroundColor: color.withOpacity(0.1),
-                labelStyle: TextStyle(color: color, fontWeight: FontWeight.w500),
-              )).toList(),
-            ),
+            const Divider(height: 25, thickness: 1),
+            if (skills.isEmpty)
+              Text(
+                'Non hai ancora aggiunto nessuna competenza per ${title.toLowerCase()}.',
+                style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+              )
+            else
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: skills.map((skill) => Chip(
+                  label: Text(skill, style: TextStyle(color: color)),
+                  backgroundColor: color.withOpacity(0.1),
+                  side: BorderSide(color: color.withOpacity(0.5)),
+                )).toList(),
+              ),
           ],
         ),
       ),
@@ -61,135 +64,155 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Otteniamo l'ID Utente corrente da FirestoreService (o AuthService se preferisci)
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-    final currentUserId = firestoreService.currentUserId;
+    final firestoreService = Provider.of<FirestoreService>(context);
 
-    // Se l'ID è nullo, c'è un errore grave nell'autenticazione.
-    if (currentUserId == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Errore: ID Utente non disponibile.'),
-        ),
-      );
-    }
-
-    // 2. Usiamo StreamBuilder per ascoltare i cambiamenti del profilo su Firestore
+    // Usa StreamBuilder per ottenere il profilo più aggiornato da Firestore
     return StreamBuilder<UserProfile?>(
-      // Questo stream DEVE puntare alla collezione 'users' con l'ID Utente
-      stream: firestoreService.streamUserProfile(currentUserId),
+      stream: firestoreService.streamUserProfile(userProfile.userId),
       builder: (context, snapshot) {
-
-        // *GESTIONE DEL CARICAMENTO/ERRORE*
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const LoadingScreen(message: 'Caricamento Profilo...');
         }
 
-        // Se ci sono errori o il documento è null
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          // Creiamo un profilo di fallback se il documento non esiste ancora in Firestore
-          final fallbackProfile = UserProfile(
-            userId: currentUserId,
-            email: 'Non disponibile (DB)',
-            name: 'Nuovo Utente (DB)',
-            canTeach: [],
-            wantsToLearn: [],
-            onboardingCompleted: false,
-          );
-
-          // Eseguiamo il rendering della schermata con i dati di fallback.
-          return _buildProfileContent(context, fallbackProfile);
+        // Se l'utente non esiste più o c'è un errore (improbabile qui)
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Center(child: Text('Impossibile caricare i dati del profilo.'));
         }
 
-        // *DATI DISPONIBILI*
         final currentProfile = snapshot.data!;
 
-        // 3. Eseguiamo il rendering del contenuto con i dati di Firestore
-        return _buildProfileContent(context, currentProfile);
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(currentProfile.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.indigo.shade600,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(LucideIcons.edit),
+                // TODO: Navigare alla schermata di Onboarding/Edit
+                onPressed: () {
+                  // Esempio di navigazione (dovrai definire OnboardingScreen se non l'hai già fatto)
+                  // Navigator.of(context).push(MaterialPageRoute(
+                  //   builder: (context) => OnboardingScreen(
+                  //     userId: currentProfile.userId,
+                  //     name: currentProfile.name,
+                  //     email: currentProfile.email,
+                  //   ),
+                  // ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Funzione Modifica Profilo non ancora implementata.')),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Sezione Foto e Informazioni Base
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.indigo.shade500,
+                        child: Text(
+                          currentProfile.name.isNotEmpty ? currentProfile.name[0].toUpperCase() : 'U',
+                          style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        currentProfile.name,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        currentProfile.email,
+                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 10),
+                      
+                      // Tariffa Oraria
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Text(
+                          'Tariffa Oraria: ${_displayRate(currentProfile.hourlyRate)}',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ID Utente (utile per debugging e per la sicurezza Firestore)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text('Il tuo ID Utente (UserId)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
+                        const SizedBox(height: 5),
+                        // CORREZIONE: Usiamo l'ID del profilo corrente
+                        Text(currentProfile.userId, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Competenze da Insegnare
+                _buildSkillsCard(
+                  title: 'Cosa posso INSEGNARE',
+                  skills: currentProfile.canTeach,
+                  icon: LucideIcons.zap,
+                  color: Colors.yellow.shade700,
+                ),
+                const SizedBox(height: 20),
+
+                // Competenze da Imparare
+                _buildSkillsCard(
+                  title: 'Cosa voglio IMPARARE',
+                  skills: currentProfile.wantsToLearn,
+                  icon: LucideIcons.bookOpen,
+                  color: Colors.indigo.shade600,
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
+}
 
-  // Metodo separato per costruire il corpo dello schermo
-  Widget _buildProfileContent(BuildContext context, UserProfile currentProfile) {
-    // ** PUNTI CRITICI: Tutti i dati visualizzati provengono da currentProfile (Firestore) **
-    final displayName = currentProfile.name.isEmpty ? 'Nome non impostato' : currentProfile.name;
-    final displayEmail = currentProfile.email.isEmpty ? 'Email non disponibile' : currentProfile.email;
-    final initialLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+// Aggiungo una semplice LoadingScreen per pulizia
+class LoadingScreen extends StatelessWidget {
+  final String message;
+  const LoadingScreen({super.key, this.message = "Caricamento..."});
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Il Mio Profilo', style: TextStyle(color: Colors.white)),
+        title: Text(message),
         backgroundColor: Colors.indigo.shade600,
-        elevation: 0,
+        foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Scheda Utente
-            Card(
-              elevation: 5,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.deepPurple.shade200,
-                      child: Text(
-                        initialLetter,
-                        style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          displayEmail,
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          _displayRate(currentProfile.hourlyRate),
-                          style: TextStyle(fontSize: 16, color: Colors.green.shade600, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 5),
-                        // Mostra l'UID di Firestore per debug/verifica
-                        Text('ID: ${currentProfile.userId}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Competenze da Insegnare
-            _buildSkillsCard(
-              title: 'Cosa posso INSEGNARE',
-              skills: currentProfile.canTeach,
-              icon: LucideIcons.zap,
-              color: Colors.yellow.shade700,
-            ),
-            const SizedBox(height: 20),
-
-            // Competenze da Imparare
-            _buildSkillsCard(
-              title: 'Cosa voglio IMPARARE',
-              skills: currentProfile.wantsToLearn,
-              icon: LucideIcons.bookOpen,
-              color: Colors.indigo.shade600,
-            ),
-          ],
-        ),
+      body: const Center(
+        child: CircularProgressIndicator(color: Colors.indigo),
       ),
     );
   }

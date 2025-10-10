@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
+import '../models/match_request.dart'; // IMPORT NECESSARIO
 
 enum MatchMode { learn, teach }
 
@@ -21,8 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Logica di filtraggio per trovare gli utenti compatibili (solo in modalità 'learn')
   List<UserProfile> _filterUsers(List<UserProfile> allUsers) {
     if (_matchMode == MatchMode.teach) {
-      // In modalità 'teach' mostriamo le richieste, non filtriamo l'intera lista.
-      // Questa funzione verrà chiamata solo in modalità 'learn'.
       return []; 
     }
     
@@ -40,40 +39,157 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // LOGICA TEMPORANEA PER LE RICHIESTE (solo per simulazione)
-  // In una vera app, questo sarebbe uno Stream/Future Builder su una collezione Firestore 'requests'
-  List<Map<String, dynamic>> _getReceivedRequests() {
-    if (_matchMode == MatchMode.learn) return [];
-    
-    // Dati fittizi per la modalità 'Voglio Insegnare' (Richieste Ricevute)
-    return [
-      {'name': 'Giulia Rossi', 'skill': 'Web Design (Figma)', 'message': 'Posso pagare 15/ora per 4 lezioni di base.'},
-      {'name': 'Marco Bianchi', 'skill': 'Programmazione Dart', 'message': 'Ho bisogno di aiuto urgente sulla sintassi asincrona.'},
-      {'name': 'Anna Verdi', 'skill': 'Lingua Inglese (C1)', 'message': 'Sono libera tutti i lunedì sera per conversazione.'},
-    ];
-  }
-  // FINE LOGICA TEMPORANEA
-
-  void _showContactMessage(UserProfile user) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Richiesta inviata a ${user.name}! Lo scambio può iniziare.'),
-        backgroundColor: Colors.green.shade500,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    // Simula lo scorrimento alla prossima carta
-    _goToNextCard();
-  }
-  
   void _goToNextCard() {
     setState(() {
       _currentCardIndex = _currentCardIndex + 1;
     });
   }
 
+  // FUNZIONE: Mostra il dialogo di contatto/invio richiesta
+  void _showContactDialog(UserProfile receiver, FirestoreService firestoreService) {
+    final TextEditingController messageController = TextEditingController();
+    String? selectedSkill;
+    
+    // Trova le skill comuni che l'utente corrente vuole imparare e il ricevente insegna
+    final commonSkills = widget.currentUserProfile.wantsToLearn
+        .where((skill) => receiver.canTeach.contains(skill))
+        .toList();
+    
+    // Se non ci sono skill in comune (non dovrebbe accadere se il filtro funziona bene, ma per sicurezza)
+    if (commonSkills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nessuna competenza in comune per l\'invio della richiesta.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Contatta ${receiver.name}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Seleziona la competenza che vuoi imparare:'),
+                const SizedBox(height: 10),
+                // Usiamo uno StatefulBuilder per gestire il cambio di stato nel Dropdown
+                StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    return DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      hint: const Text('Scegli una skill'),
+                      value: selectedSkill,
+                      items: commonSkills.map((skill) => DropdownMenuItem(
+                        value: skill,
+                        child: Text(skill),
+                      )).toList(),
+                      onChanged: (value) {
+                        setDialogState(() { // Aggiorna lo stato del dialogo
+                          selectedSkill = value;
+                        });
+                      },
+                    );
+                  }
+                ),
+                const SizedBox(height: 20),
+                const Text('Messaggio (opzionale):'),
+                TextFormField(
+                  controller: messageController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: 'Ciao! Mi piacerebbe imparare X. Sei disponibile?',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annulla'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedSkill == null) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Devi selezionare una competenza!')),
+                  );
+                  return;
+                }
+                
+                final request = MatchRequest(
+                  id: '', 
+                  senderId: widget.currentUserProfile.userId,
+                  senderName: widget.currentUserProfile.name,
+                  receiverId: receiver.userId,
+                  skillRequested: selectedSkill!,
+                  message: messageController.text.trim(),
+                  timestamp: DateTime.now(),
+                );
+                
+                try {
+                  // CHIAMATA AL NUOVO METODO sendMatchRequest
+                  await firestoreService.sendMatchRequest(request);
+                  
+                  // Chiudi il dialogo, vai alla carta successiva e mostra il feedback
+                  Navigator.of(context).pop();
+                  _goToNextCard(); 
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(
+                      content: Text('Richiesta inviata a ${receiver.name} per ${selectedSkill}!'),
+                      backgroundColor: Colors.green.shade500,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } catch (e) {
+                  // Gestione degli errori
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(
+                      content: Text('Errore nell\'invio della richiesta: ${e.toString()}'),
+                      backgroundColor: Colors.red.shade500,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Invia Richiesta'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // FUNZIONE: Gestione dell'accettazione della richiesta
+  void _acceptRequest(MatchRequest request, FirestoreService firestoreService) async {
+    try {
+      // CHIAMATA AL NUOVO METODO updateRequestStatus
+      await firestoreService.updateRequestStatus(request.id, true);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hai accettato la richiesta da ${request.senderName} per ${request.skillRequested}! Ora puoi contattarlo/a.'),
+          backgroundColor: Colors.deepPurple,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore nell\'accettare la richiesta: ${e.toString()}'),
+          backgroundColor: Colors.red.shade500,
+        ),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
+    // Ottieni il servizio Firestore tramite Provider
     final firestoreService = Provider.of<FirestoreService>(context);
 
     return Scaffold(
@@ -99,8 +215,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 16),
                 _buildModeButton(
                   mode: MatchMode.teach,
-                  icon: LucideIcons.inbox, // Icona cambiata per le richieste
-                  label: 'Richieste Ricevute', // Label cambiata
+                  icon: LucideIcons.inbox, 
+                  label: 'Richieste Ricevute',
                 ),
               ],
             ),
@@ -110,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _matchMode == MatchMode.learn
                 ? _buildMatchingView(firestoreService) // Mostra le carte
-                : _buildRequestsView(), // Mostra le richieste
+                : _buildRequestsView(firestoreService), // Mostra le richieste
           ),
           const SizedBox(height: 10),
         ],
@@ -135,21 +251,22 @@ class _HomeScreenState extends State<HomeScreen> {
         
         // Assicurati che l'indice corrente sia valido
         if (_currentCardIndex >= matchedUsers.length && matchedUsers.isNotEmpty) {
-          _currentCardIndex = 0;
+          _currentCardIndex = 0; // Torna alla prima carta
         }
 
         final usersToShow = matchedUsers.skip(_currentCardIndex).toList();
 
         if (usersToShow.isEmpty) {
-          return Center(
+          // CORREZIONE QUI: Chiusura del widget Text con ")"
+          return const Center(
             child: Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: EdgeInsets.all(32.0),
               child: Text(
                 'Nessun insegnante trovato in base alle tue competenze richieste. Aggiorna il tuo profilo!',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-            ),
+            ), // Chiusura corretta
           );
         }
 
@@ -174,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Carta in cima (interagibile)
               _UserCard(
                 user: usersToShow.first, 
-                onContact: () => _showContactMessage(usersToShow.first),
+                onContact: () => _showContactDialog(usersToShow.first, firestoreService),
                 onSkip: _goToNextCard, // Funzione per scartare
               ),
             ],
@@ -185,38 +302,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   // --- Widget per la Visualizzazione delle Richieste (Modalità Teach) ---
-  Widget _buildRequestsView() {
-    final requests = _getReceivedRequests(); // Ottieni le richieste fittizie
+  Widget _buildRequestsView(FirestoreService firestoreService) {
+    final currentUserId = widget.currentUserProfile.userId;
 
-    if (requests.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(LucideIcons.mail, size: 40, color: Colors.grey.shade400),
-              const SizedBox(height: 10),
-              const Text(
-                'Nessuna richiesta di apprendimento ricevuta per le tue competenze. Condividi le tue abilità!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+    return StreamBuilder<List<MatchRequest>>(
+      // CHIAMATA REALISTICA AL DB: usa il nuovo metodo streamReceivedRequests
+      stream: firestoreService.streamReceivedRequests(currentUserId), 
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Errore nel caricamento delle richieste: ${snapshot.error}'));
+        }
+
+        final requests = snapshot.data ?? []; // Ottieni la lista di MatchRequest
+
+        if (requests.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.mail, size: 40, color: Colors.grey.shade400),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Nessuna richiesta di apprendimento ricevuta per le tue competenze. Condividi le tue abilità!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: requests.length,
-      itemBuilder: (context, index) {
-        final request = requests[index];
-        return _RequestCard(
-          name: request['name'],
-          skill: request['skill'],
-          message: request['message'],
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: requests.length,
+          itemBuilder: (context, index) {
+            final request = requests[index];
+            return _RequestCard(
+              request: request, 
+              // Passa la funzione di accettazione
+              onAccept: () => _acceptRequest(request, firestoreService),
+            );
+          },
         );
       },
     );
@@ -225,6 +357,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Costruisce il bottone per cambiare modalità
   Widget _buildModeButton({required MatchMode mode, required IconData icon, required String label}) {
     final isSelected = _matchMode == mode;
+    final color = mode == MatchMode.learn ? Colors.indigo.shade600 : Colors.deepOrange;
+
     return Expanded(
       child: ElevatedButton.icon(
         onPressed: () {
@@ -233,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentCardIndex = 0; // Resetta l'indice quando si cambia modalità
           });
         },
-        icon: Icon(icon, color: isSelected ? Colors.white : (mode == MatchMode.learn ? Colors.indigo.shade600 : Colors.deepOrange)),
+        icon: Icon(icon, color: isSelected ? Colors.white : color),
         label: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
         style: ElevatedButton.styleFrom(
           backgroundColor: isSelected ? Colors.indigo.shade600 : Colors.white,
@@ -380,14 +514,12 @@ class _UserCard extends StatelessWidget {
 
 // Widget separato per la SCHEDA RICHIESTA (Modalità Teach)
 class _RequestCard extends StatelessWidget {
-  final String name;
-  final String skill;
-  final String message;
+  final MatchRequest request; 
+  final VoidCallback onAccept;
 
   const _RequestCard({
-    required this.name,
-    required this.skill,
-    required this.message,
+    required this.request,
+    required this.onAccept,
   });
 
   @override
@@ -406,19 +538,27 @@ class _RequestCard extends StatelessWidget {
                 const Icon(LucideIcons.user, size: 20, color: Color(0xFFFF9800)),
                 const SizedBox(width: 8),
                 Text(
-                  name,
+                  request.senderName, 
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF333333)),
                 ),
+                const Spacer(),
+                Text(
+                  // Formattazione della data
+                  'Inviata il: ${request.timestamp.day}/${request.timestamp.month}/${request.timestamp.year.toString().substring(2)}', 
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                )
               ],
             ),
             const Divider(height: 15, thickness: 0.5),
             Text(
-              'Vuole Imparare: $skill',
-              style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.indigo.shade600),
+              'Richiesta per: ${request.skillRequested}', 
+              style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic, color: Colors.indigo.shade600, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             Text(
-              'Messaggio: "$message"',
+              request.message.isNotEmpty 
+                ? 'Messaggio: "${request.message}"' 
+                : 'L\'utente non ha lasciato un messaggio.',
               style: const TextStyle(fontSize: 14),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -428,13 +568,8 @@ class _RequestCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Implementa logica per accettare / aprire la chat
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Hai accettato la richiesta di $name!'), backgroundColor: Colors.deepPurple),
-                    );
-                  },
-                  icon: const Icon(LucideIcons.messageSquare, size: 18),
+                  onPressed: onAccept, // Chiama la funzione che usa updateRequestStatus
+                  icon: const Icon(LucideIcons.checkCircle, size: 18),
                   label: const Text('Accetta e Contatta'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.deepPurple,

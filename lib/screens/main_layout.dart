@@ -36,7 +36,8 @@ class _MainLayoutState extends State<MainLayout> {
         final UserProfile? userProfile = snapshot.data;
 
         // Caso 1: Profilo non trovato o non completo -> Onboarding
-        if (userProfile == null || (userProfile.canTeach.isEmpty && userProfile.wantsToLearn.isEmpty)) {
+        if (userProfile == null || !userProfile.onboardingCompleted) {
+          // Se non abbiamo un profilo (userProfile è null), usiamo i dati di autenticazione minimi
           return OnboardingScreen(
             userId: widget.userId,
             name: userProfile?.name ?? 'Nuovo Utente',
@@ -46,10 +47,13 @@ class _MainLayoutState extends State<MainLayout> {
 
         // Caso 2: Profilo completo -> Layout Principale con TabBar
         final List<Widget> children = [
+          // HOME SCREEN: richiede currentUserProfile
           HomeScreen(currentUserProfile: userProfile),
-          // ProfileScreen NON richiede userProfile (si auto-carica)
-          const ProfileScreen(),
-          // *** CORREZIONE: SettingsScreen richiede userProfile ***
+          
+          // PROFILE SCREEN: richiede userProfile - CORREZIONE QUI
+          ProfileScreen(userProfile: userProfile),
+          
+          // SETTINGS SCREEN: richiede userProfile
           SettingsScreen(userProfile: userProfile),
         ];
 
