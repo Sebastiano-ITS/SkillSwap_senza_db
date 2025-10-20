@@ -1,68 +1,96 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../models/user_profile.dart'; 
-import '../models/match_request.dart'; // IMPORT NECESSARIO
-
-// Assumiamo che queste variabili siano state inizializzate nel tuo ambiente Flutter/Firebase
-final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-// Variabile globale per l'ID dell'app, essenziale per la sicurezza di Firestore
-const String __app_id = 'skillswap-gemini-app'; // Sostituisci con il tuo ID reale se necessario
+import '../models/match_request.dart';
+import '../data/local_data.dart';
 
 class FirestoreService {
-  // Metodo per ottenere tutti i profili utente in tempo reale
-  Stream<List<UserProfile>> streamAllUsers() {
-    // Percorso della collezione pubblica come definito dalle regole di sicurezza
-    final userProfileCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles');
-    
-    return userProfileCollection.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => UserProfile.fromFirestore(doc)).toList();
-    });
+  // Istanza di LocalData
+  final LocalData _localData = LocalData();
+  
+  // Stream controllers
+  final _usersStreamController = StreamController<List<UserProfile>>.broadcast();
+  final _userProfileStreamController = StreamController<UserProfile?>.broadcast();
+  final _receivedRequestsStreamController = StreamController<List<MatchRequest>>.broadcast();
+  
+  // Costruttore
+  FirestoreService() {
+    _initializeData();
   }
   
+  // Inizializza i dati
+  Future<void> _initializeData() async {
+    await _localData.initialize();
+  }
+  
+  // Metodo per ottenere tutti i profili utente in tempo reale
+  Stream<List<UserProfile>> streamAllUsers() {
+    // Programma l'emissione iniziale per evitare perdita di eventi prima dell'iscrizione
+    Future.microtask(() {
+      _usersStreamController.add(_localData.getAllUsers());
+    });
+    return _usersStreamController.stream;
+  }
+
   // Metodo per ottenere un singolo profilo utente
   Stream<UserProfile?> streamUserProfile(String userId) {
-    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles').doc(userId);
-    
-    return docRef.snapshots().map((snapshot) {
-      if (!snapshot.exists || snapshot.data() == null) {
-        return null;
-      }
-      return UserProfile.fromFirestore(snapshot);
+    // Programma l'emissione iniziale per evitare perdita di eventi prima dell'iscrizione
+    Future.microtask(() {
+      _userProfileStreamController.add(_localData.getUserById(userId));
     });
+    return _userProfileStreamController.stream;
   }
 
   // Metodo per salvare o aggiornare un profilo (usato in Onboarding)
   Future<void> saveUserProfile(UserProfile user) async {
-    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('user_profiles').doc(user.userId);
-    await docRef.set(user.toMap(), SetOptions(merge: true));
+    _localData.saveUser(user);
+    // Aggiorna gli stream
+    _usersStreamController.add(_localData.getAllUsers());
+    _userProfileStreamController.add(user);
   }
 
-  // --- NUOVI METODI PER LA GESTIONE DELLE RICHIESTE ---
+  // --- METODI PER LA GESTIONE DELLE RICHIESTE ---
   
   // 1. Invia una richiesta di match
   Future<void> sendMatchRequest(MatchRequest request) async {
-    final requestCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests'); 
-    await requestCollection.add(request.toMap());
+    _localData.addMatchRequest(request);
+    // Aggiorna lo stream delle richieste ricevute
+    _updateReceivedRequestsStream(request.receiverId);
   }
 
   // 2. Ottieni le richieste ricevute in tempo reale per un dato ricevente
   Stream<List<MatchRequest>> streamReceivedRequests(String receiverId) {
-    final requestCollection = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests'); 
-    
-    // Filtra per il destinatario e mostra solo quelle NON ancora accettate
-    return requestCollection
-        .where('receiverId', isEqualTo: receiverId)
-        .where('accepted', isEqualTo: false) // Mostra solo quelle in sospeso
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) => MatchRequest.fromFirestore(doc)).toList();
-        });
+    _updateReceivedRequestsStream(receiverId);
+    return _receivedRequestsStreamController.stream;
+  }
+  
+  // Metodo per aggiornare lo stream delle richieste ricevute
+  void _updateReceivedRequestsStream(String receiverId) {
+    _receivedRequestsStreamController.add(_localData.getReceivedRequests(receiverId));
   }
 
   // 3. Aggiorna lo stato di una richiesta (es. accettarla)
   Future<void> updateRequestStatus(String requestId, bool accepted) async {
-    final docRef = _db.collection('artifacts').doc(__app_id).collection('public').doc('data').collection('match_requests').doc(requestId);
-    await docRef.update({'accepted': accepted, 'acceptanceTimestamp': FieldValue.serverTimestamp()});
+    _localData.updateRequestStatus(requestId, accepted);
+    // Aggiorna tutti gli stream per riflettere i cambiamenti
+    _updateAllStreams();
+  }
+  
+  // Metodo per aggiornare tutti gli stream
+  void _updateAllStreams() {
+    // Aggiorna lo stream degli utenti
+    _usersStreamController.add(_localData.getAllUsers());
+    
+    // Aggiorna lo stream delle richieste ricevute per tutti gli utenti
+    // (in un'app reale, questo sarebbe più mirato)
+    for (var user in _localData.getAllUsers()) {
+      _updateReceivedRequestsStream(user.userId);
+    }
+  }
+  
+  // Chiudi tutti gli stream quando non sono più necessari
+  void dispose() {
+    _usersStreamController.close();
+    _userProfileStreamController.close();
+    _receivedRequestsStreamController.close();
   }
 }

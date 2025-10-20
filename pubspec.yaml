@@ -17,13 +17,11 @@ dependencies:
   # Base Packages
   cupertino_icons: ^1.0.8
 
-  # Firebase Services (Core, Auth, Firestore)
-  firebase_core: ^2.27.1
-  firebase_auth: ^4.19.0
-  cloud_firestore: ^4.17.0
-
   # State Management
   provider: ^6.1.2
+  
+  # Utilities
+  path_provider: ^2.1.2
 
   # Icons & Utilities
   # Risoluzione del conflitto: usiamo la versione compatibile suggerita
@@ -39,3 +37,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/data/users.json
+    - assets/data/match_requests.json

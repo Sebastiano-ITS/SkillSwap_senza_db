@@ -1,67 +1,104 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/user_profile.dart';
+import '../services/firestore_service.dart';
 
-class UserProfile {
+class ProfilePage extends StatelessWidget {
   final String userId;
-  final String email;
-  final String name;
-  final List<String> canTeach;
-  final List<String> wantsToLearn;
-  final bool onboardingCompleted;
-  final double hourlyRate;
 
-  UserProfile({
-    required this.userId,
-    required this.email,
-    required this.name,
-    required this.canTeach,
-    required this.wantsToLearn,
-    this.onboardingCompleted = false,
-    this.hourlyRate = 15.0,
-  });
+  const ProfilePage({Key? key, required this.userId}) : super(key: key);
 
-  // Factory method per creare un UserProfile da un DocumentSnapshot di Firestore
-  factory UserProfile.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
+  @override
+  Widget build(BuildContext context) {
+    final firestoreService = Provider.of<FirestoreService>(context);
 
-    // Se i dati sono null (documento non esiste), forniamo un profilo di fallback
-    if (data == null) {
-      return UserProfile(
-          userId: doc.id,
-          email: 'Email non disponibile', // Fallback
-          name: 'Nuovo Utente', // Fallback
-          canTeach: [],
-          wantsToLearn: []
-      );
-    }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profilo'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: StreamBuilder<UserProfile?>(
+        stream: firestoreService.streamUserProfile(userId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    // Estrazione dei campi con fallback se mancanti o null
-    return UserProfile(
-      // Usiamo l'ID del documento se 'uid' non è presente
-      userId: data['uid'] as String? ?? doc.id,
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Errore: ${snapshot.error}'),
+            );
+          }
 
-      // Se il campo 'email' è null, usiamo 'Email non disponibile'.
-      email: data['email'] as String? ?? 'Email non disponibile',
+          final userProfile = snapshot.data;
+          if (userProfile == null) {
+            return const Center(
+              child: Text('Profilo non trovato'),
+            );
+          }
 
-      // Se il campo 'name' è null o mancante, usiamo 'Nuovo Utente'.
-      name: data['name'] as String? ?? 'Nuovo Utente',
-
-      canTeach: List<String>.from(data['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(data['wantsToLearn'] ?? []),
-      onboardingCompleted: data['onboardingCompleted'] as bool? ?? false,
-      hourlyRate: (data['hourlyRate'] is num) ? data['hourlyRate'].toDouble() : 15.0,
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userProfile.name,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          userProfile.email,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tariffa oraria: €${userProfile.hourlyRate.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (userProfile.canTeach.isNotEmpty) ...[
+                  Text(
+                    'Può insegnare:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: userProfile.canTeach
+                        .map((skill) => Chip(label: Text(skill)))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (userProfile.wantsToLearn.isNotEmpty) ...[
+                  Text(
+                    'Vuole imparare:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: userProfile.wantsToLearn
+                        .map((skill) => Chip(label: Text(skill)))
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
-  }
-
-  // Metodo per convertire UserProfile in Map per il salvataggio su Firestore
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': userId,
-      'email': email,
-      'name': name,
-      'canTeach': canTeach,
-      'wantsToLearn': wantsToLearn,
-      'onboardingCompleted': onboardingCompleted,
-      'hourlyRate': hourlyRate,
-    };
   }
 }

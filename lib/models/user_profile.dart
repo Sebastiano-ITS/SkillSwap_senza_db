@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class UserProfile {
   final String userId;
   final String email;
@@ -19,41 +17,21 @@ class UserProfile {
     this.hourlyRate = 15.0,
   });
 
-  // Factory method per creare un UserProfile da un DocumentSnapshot di Firestore
-  factory UserProfile.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
-
-    // Se i dati sono null (documento non esiste), forniamo un profilo di fallback
-    if (data == null) {
-      return UserProfile(
-          userId: doc.id,
-          email: 'Email non disponibile', // Fallback
-          name: 'Nuovo Utente', // Fallback
-          canTeach: [],
-          wantsToLearn: []
-      );
-    }
-
-    // Estrazione dei campi con fallback se mancanti o null
+  // Factory method per creare un UserProfile da un oggetto JSON
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      // Usiamo l'ID del documento se 'uid' non è presente
-      userId: data['uid'] as String? ?? doc.id,
-
-      // Se il campo 'email' è null, usiamo 'Email non disponibile'.
-      email: data['email'] as String? ?? 'Email non disponibile',
-
-      // Se il campo 'name' è null o mancante, usiamo 'Nuovo Utente'.
-      name: data['name'] as String? ?? 'Nuovo Utente',
-
-      canTeach: List<String>.from(data['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(data['wantsToLearn'] ?? []),
-      onboardingCompleted: data['onboardingCompleted'] as bool? ?? false,
-      hourlyRate: (data['hourlyRate'] is num) ? data['hourlyRate'].toDouble() : 15.0,
+      userId: json['uid'] as String? ?? '',
+      email: json['email'] as String? ?? 'Email non disponibile',
+      name: json['name'] as String? ?? 'Nuovo Utente',
+      canTeach: List<String>.from(json['canTeach'] ?? []),
+      wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
+      onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+      hourlyRate: (json['hourlyRate'] is num) ? json['hourlyRate'].toDouble() : 15.0,
     );
   }
 
-  // Metodo per convertire UserProfile in Map per il salvataggio su Firestore
-  Map<String, dynamic> toMap() {
+  // Metodo per convertire UserProfile in Map per il salvataggio su JSON
+  Map<String, dynamic> toJson() {
     return {
       'uid': userId,
       'email': email,

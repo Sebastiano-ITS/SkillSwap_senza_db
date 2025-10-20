@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -31,13 +30,9 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         await authService.signUp(_emailController.text, _passwordController.text, _nameController.text);
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message ?? 'Errore di autenticazione sconosciuto.';
-      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Si è verificato un errore inatteso.';
+        _errorMessage = e.toString();
       });
     } finally {
       setState(() {

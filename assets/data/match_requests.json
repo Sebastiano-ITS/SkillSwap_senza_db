@@ -1,0 +1,43 @@
+[
+  {
+    "id": "request_1",
+    "senderId": "user_2",
+    "senderName": "Laura Bianchi",
+    "receiverId": "user_1",
+    "skillRequested": "Programmazione",
+    "message": "Vorrei imparare le basi della programmazione in Python",
+    "timestamp": "2023-06-10T15:30:00.000Z",
+    "accepted": false
+  },
+  {
+    "id": "request_2",
+    "senderId": "user_3",
+    "senderName": "Giovanni Verdi",
+    "receiverId": "user_1",
+    "skillRequested": "Matematica",
+    "message": "Ho bisogno di aiuto con l'algebra lineare",
+    "timestamp": "2023-06-15T10:45:00.000Z",
+    "accepted": true,
+    "acceptanceTimestamp": "2023-06-15T14:20:00.000Z"
+  },
+  {
+    "id": "request_3",
+    "senderId": "user_1",
+    "senderName": "Mario Rossi",
+    "receiverId": "user_2",
+    "skillRequested": "Inglese",
+    "message": "Vorrei migliorare il mio inglese per un colloquio di lavoro",
+    "timestamp": "2023-06-20T09:15:00.000Z",
+    "accepted": false
+  },
+  {
+    "id": "request_4",
+    "senderId": "user_5",
+    "senderName": "Luca Gialli",
+    "receiverId": "user_4",
+    "skillRequested": "Cucina",
+    "message": "Mi piacerebbe imparare a cucinare piatti italiani tradizionali",
+    "timestamp": "2023-06-25T18:00:00.000Z",
+    "accepted": false
+  }
+]

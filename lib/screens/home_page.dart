@@ -1,8 +1,6 @@
 // home_page.dart
 import 'package:flutter/material.dart';
 
-import '/screens/profile_page.dart';
-
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();

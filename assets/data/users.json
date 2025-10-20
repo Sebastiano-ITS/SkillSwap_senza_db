@@ -1,0 +1,57 @@
+[
+  {
+    "uid": "user_1",
+    "email": "mario.rossi@example.com",
+    "password": "password123",
+    "name": "Mario Rossi",
+    "createdAt": "2023-01-15T10:30:00.000Z",
+    "onboardingCompleted": true,
+    "canTeach": ["Programmazione", "Matematica", "Fisica"],
+    "wantsToLearn": ["Inglese", "Cucina"],
+    "hourlyRate": 20.0
+  },
+  {
+    "uid": "user_2",
+    "email": "laura.bianchi@example.com",
+    "password": "password123",
+    "name": "Laura Bianchi",
+    "createdAt": "2023-02-20T14:45:00.000Z",
+    "onboardingCompleted": true,
+    "canTeach": ["Inglese", "Francese", "Spagnolo"],
+    "wantsToLearn": ["Programmazione", "Fotografia"],
+    "hourlyRate": 15.0
+  },
+  {
+    "uid": "user_3",
+    "email": "giovanni.verdi@example.com",
+    "password": "password123",
+    "name": "Giovanni Verdi",
+    "createdAt": "2023-03-10T09:15:00.000Z",
+    "onboardingCompleted": true,
+    "canTeach": ["Fotografia", "Design", "Marketing"],
+    "wantsToLearn": ["Matematica", "Francese"],
+    "hourlyRate": 18.0
+  },
+  {
+    "uid": "user_4",
+    "email": "anna.neri@example.com",
+    "password": "password123",
+    "name": "Anna Neri",
+    "createdAt": "2023-04-05T16:20:00.000Z",
+    "onboardingCompleted": false,
+    "canTeach": ["Cucina", "Nutrizione"],
+    "wantsToLearn": ["Design", "Marketing"],
+    "hourlyRate": 25.0
+  },
+  {
+    "uid": "user_5",
+    "email": "luca.gialli@example.com",
+    "password": "password123",
+    "name": "Luca Gialli",
+    "createdAt": "2023-05-12T11:10:00.000Z",
+    "onboardingCompleted": true,
+    "canTeach": ["Storia", "Geografia", "Letteratura"],
+    "wantsToLearn": ["Cucina", "Fotografia"],
+    "hourlyRate": 17.0
+  }
+]

@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class MatchRequest {
-  final String id; // ID del documento Firestore
+  final String id;
   final String senderId; // ID di chi invia (il Learner)
   final String senderName; // Nome di chi invia
   final String receiverId; // ID di chi riceve (il Teacher)
@@ -21,28 +19,21 @@ class MatchRequest {
     this.accepted = false,
   });
 
-  // Factory per creare un oggetto da un DocumentSnapshot di Firestore
-  factory MatchRequest.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
-    
-    if (data == null) {
-      throw Exception("Documento richiesta match vuoto!");
-    }
-    
+  // Factory per creare un oggetto da una Map
+  factory MatchRequest.fromMap(Map<String, dynamic> data, String id) {
     return MatchRequest(
-      id: doc.id,
+      id: id,
       senderId: data['senderId'] ?? '',
       senderName: data['senderName'] ?? 'Anonimo',
       receiverId: data['receiverId'] ?? '',
       skillRequested: data['skillRequested'] ?? 'Sconosciuta',
       message: data['message'] ?? '',
-      // Conversione sicura di Timestamp in DateTime
-      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(), 
+      timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
       accepted: data['accepted'] ?? false,
     );
   }
 
-  // Convertire l'oggetto in Map per Firestore
+  // Convertire l'oggetto in Map
   Map<String, dynamic> toMap() {
     return {
       'senderId': senderId,
@@ -50,7 +41,7 @@ class MatchRequest {
       'receiverId': receiverId,
       'skillRequested': skillRequested,
       'message': message,
-      'timestamp': Timestamp.fromDate(timestamp),
+      'timestamp': timestamp.toIso8601String(),
       'accepted': accepted,
     };
   }
