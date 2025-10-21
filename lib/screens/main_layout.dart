@@ -4,7 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import 'onboarding_screen.dart';
-import 'home_screen.dart';
+import 'home/home_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -23,7 +23,6 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     final firestoreService = Provider.of<FirestoreService>(context, listen: false);
 
-    // StreamBuilder per caricare il profilo e decidere se mostrare l'onboarding
     return StreamBuilder<UserProfile?>(
       stream: firestoreService.streamUserProfile(widget.userId),
       builder: (context, snapshot) {
@@ -35,55 +34,33 @@ class _MainLayoutState extends State<MainLayout> {
 
         final UserProfile? userProfile = snapshot.data;
 
-        // Caso 1: Profilo non trovato o non completo -> Onboarding
+        // Se il profilo è nullo o non completato, mostra onboarding
         if (userProfile == null || !userProfile.onboardingCompleted) {
-          // Se non abbiamo un profilo (userProfile è null), usiamo i dati di autenticazione minimi
           return OnboardingScreen(
             userId: widget.userId,
-            name: userProfile?.name ?? 'Nuovo Utente',
+            name: userProfile?.name ?? '',
             email: userProfile?.email ?? '',
           );
         }
 
-        // Caso 2: Profilo completo -> Layout Principale con TabBar
-        final List<Widget> children = [
-          // HOME SCREEN: richiede currentUserProfile
+        // Schermate principali
+        final List<Widget> screens = [
           HomeScreen(currentUserProfile: userProfile),
-          
-          // PROFILE SCREEN: richiede userProfile - CORREZIONE QUI
           ProfileScreen(userProfile: userProfile),
-          
-          // SETTINGS SCREEN: richiede userProfile
           SettingsScreen(userProfile: userProfile),
         ];
 
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: children,
-          ),
+          body: screens[_currentIndex],
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
             selectedItemColor: Colors.indigo.shade600,
-            unselectedItemColor: Colors.grey.shade500,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
+            unselectedItemColor: Colors.grey,
             items: const [
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.user),
-                label: 'Profilo',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.settings),
-                label: 'Settings',
-              ),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: 'Profilo'),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.settings), label: 'Impostazioni'),
             ],
           ),
         );

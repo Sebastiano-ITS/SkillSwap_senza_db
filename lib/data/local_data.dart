@@ -14,67 +14,52 @@ class LocalData {
   // Dati in memoria
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _matchRequests = [];
-  
+
   // Utente corrente
   String? _currentUserId;
-  
+
   // Getter per l'utente corrente
   String? get currentUserId => _currentUserId;
-  
+
   // Metodo per inizializzare i dati
   Future<void> initialize() async {
     // Carica i dati degli utenti dal file JSON
     final String usersJson = await rootBundle.loadString('assets/data/users.json');
     _users = List<Map<String, dynamic>>.from(json.decode(usersJson));
-    
+
     // Carica i dati delle richieste di match dal file JSON
     final String requestsJson = await rootBundle.loadString('assets/data/match_requests.json');
     _matchRequests = List<Map<String, dynamic>>.from(json.decode(requestsJson));
   }
-  
+
   // Metodo per ottenere tutti gli utenti
   List<UserProfile> getAllUsers() {
-    return _users.map((userData) => UserProfile(
-      userId: userData['uid'],
-      email: userData['email'],
-      name: userData['name'],
-      canTeach: List<String>.from(userData['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(userData['wantsToLearn'] ?? []),
-      onboardingCompleted: userData['onboardingCompleted'] ?? false,
-      hourlyRate: (userData['hourlyRate'] is num) ? userData['hourlyRate'].toDouble() : 15.0,
-    )).toList();
+    return _users.map((userData) => UserProfile.fromMap(userData)).toList();
   }
-  
+
   // Metodo per ottenere un utente specifico
   UserProfile? getUserById(String userId) {
     final userData = _users.firstWhere(
-      (user) => user['uid'] == userId,
+          (user) => (user['uid'] == userId) || (user['id'] == userId),
       orElse: () => <String, dynamic>{},
     );
-    
+
     if (userData.isEmpty) return null;
-    
-    return UserProfile(
-      userId: userData['uid'],
-      email: userData['email'],
-      name: userData['name'],
-      canTeach: List<String>.from(userData['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(userData['wantsToLearn'] ?? []),
-      onboardingCompleted: userData['onboardingCompleted'] ?? false,
-      hourlyRate: (userData['hourlyRate'] is num) ? userData['hourlyRate'].toDouble() : 15.0,
-    );
+
+    return UserProfile.fromMap(userData);
   }
-  
+
   // Metodo per salvare un utente
   void saveUser(UserProfile user) {
-    final index = _users.indexWhere((u) => u['uid'] == user.userId);
+    final index = _users.indexWhere((u) => (u['uid'] == user.userId) || (u['id'] == user.userId));
+    final Map<String, dynamic> map = user.toMap();
     if (index != -1) {
-      _users[index] = user.toJson();
+      _users[index] = map;
     } else {
-      _users.add(user.toJson());
+      _users.add(map);
     }
   }
-  
+
   // Metodo per ottenere tutte le richieste di match
   List<MatchRequest> getAllMatchRequests() {
     return _matchRequests.map((requestData) => MatchRequest(
@@ -88,14 +73,14 @@ class LocalData {
       accepted: requestData['accepted'] ?? false,
     )).toList();
   }
-  
+
   // Metodo per ottenere le richieste di match ricevute da un utente
   List<MatchRequest> getReceivedRequests(String receiverId) {
     return getAllMatchRequests()
         .where((request) => request.receiverId == receiverId && !request.accepted)
         .toList();
   }
-  
+
   // Metodo per aggiungere una nuova richiesta di match
   void addMatchRequest(MatchRequest request) {
     final Map<String, dynamic> requestMap = request.toMap();
@@ -103,7 +88,7 @@ class LocalData {
     requestMap['timestamp'] = request.timestamp.toIso8601String();
     _matchRequests.add(requestMap);
   }
-  
+
   // Metodo per aggiornare lo stato di una richiesta di match
   void updateRequestStatus(String requestId, bool accepted) {
     final index = _matchRequests.indexWhere((r) => r['id'] == requestId);
@@ -112,36 +97,36 @@ class LocalData {
       _matchRequests[index]['acceptanceTimestamp'] = DateTime.now().toIso8601String();
     }
   }
-  
+
   // Metodo per autenticare un utente
   bool authenticateUser(String email, String password) {
     final user = _users.firstWhere(
-      (u) => u['email'] == email && u['password'] == password,
+          (u) => u['email'] == email && u['password'] == password,
       orElse: () => <String, dynamic>{},
     );
-    
+
     if (user.isNotEmpty) {
-      _currentUserId = user['uid'];
+      _currentUserId = user['uid'] ?? user['id'];
       return true;
     }
     return false;
   }
-  
+
   // Metodo per registrare un nuovo utente
   String? registerUser(String email, String password, String name) {
     // Verifica se l'email è già in uso
     final existingUser = _users.firstWhere(
-      (u) => u['email'] == email,
+          (u) => u['email'] == email,
       orElse: () => <String, dynamic>{},
     );
-    
+
     if (existingUser.isNotEmpty) {
       return null; // Email già in uso
     }
-    
+
     // Crea un nuovo ID utente
     final String newUserId = 'user_${_users.length + 1}';
-    
+
     // Crea un nuovo utente
     final Map<String, dynamic> newUser = {
       'uid': newUserId,
@@ -154,16 +139,16 @@ class LocalData {
       'wantsToLearn': <String>[],
       'hourlyRate': 15.0,
     };
-    
+
     // Aggiungi l'utente alla lista
     _users.add(newUser);
-    
+
     // Imposta l'utente corrente
     _currentUserId = newUserId;
-    
+
     return newUserId;
   }
-  
+
   // Metodo per disconnettere l'utente
   void signOut() {
     _currentUserId = null;

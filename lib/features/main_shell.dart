@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../screens/home_screen.dart';
+import '../screens/home/home_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/chat_list_screen.dart';
 import '../screens/profile_screen.dart';

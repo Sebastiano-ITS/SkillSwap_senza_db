@@ -1,45 +1,65 @@
+import 'package:flutter/foundation.dart';
+
 class UserProfile {
+  final String id;
   final String userId;
   final String email;
   final String name;
+  final int? age;
+  final String imageUrl;
+  final String bio;
   final List<String> canTeach;
   final List<String> wantsToLearn;
+  final List<String> skills;
+  final List<String> skillsToLearn;
   final bool onboardingCompleted;
-  final double hourlyRate;
 
-  UserProfile({
+  const UserProfile({
+    required this.id,
     required this.userId,
     required this.email,
     required this.name,
-    required this.canTeach,
-    required this.wantsToLearn,
+    this.age,
+    this.imageUrl = 'https://via.placeholder.com/600x400',
+    this.bio = '',
+    this.canTeach = const [],
+    this.wantsToLearn = const [],
+    this.skills = const [],
+    this.skillsToLearn = const [],
     this.onboardingCompleted = false,
-    this.hourlyRate = 15.0,
   });
 
-  // Factory method per creare un UserProfile da un oggetto JSON
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
+  factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(
-      userId: json['uid'] as String? ?? '',
-      email: json['email'] as String? ?? 'Email non disponibile',
-      name: json['name'] as String? ?? 'Nuovo Utente',
-      canTeach: List<String>.from(json['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
-      onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
-      hourlyRate: (json['hourlyRate'] is num) ? json['hourlyRate'].toDouble() : 15.0,
+      id: map['id'] ?? '',
+      userId: map['userId'] ?? map['uid'] ?? '',
+      email: map['email'] ?? '',
+      name: map['name'] ?? '',
+      age: map['age'] is int ? map['age'] : (map['age'] != null ? int.tryParse(map['age'].toString()) : null),
+      imageUrl: map['imageUrl'] ?? '',
+      bio: map['bio'] ?? '',
+      canTeach: List<String>.from(map['canTeach'] ?? []),
+      wantsToLearn: List<String>.from(map['wantsToLearn'] ?? []),
+      skills: List<String>.from(map['skills'] ?? []),
+      skillsToLearn: List<String>.from(map['skillsToLearn'] ?? []),
+      onboardingCompleted: map['onboardingCompleted'] ?? false,
     );
   }
 
-  // Metodo per convertire UserProfile in Map per il salvataggio su JSON
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
-      'uid': userId,
+      'id': id,
+      'userId': userId,
       'email': email,
       'name': name,
+      'age': age,
+      'imageUrl': imageUrl,
+      'bio': bio,
       'canTeach': canTeach,
       'wantsToLearn': wantsToLearn,
+      'skills': skills,
+      'skillsToLearn': skillsToLearn,
       'onboardingCompleted': onboardingCompleted,
-      'hourlyRate': hourlyRate,
     };
   }
 }

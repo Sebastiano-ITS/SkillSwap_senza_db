@@ -6,8 +6,8 @@ import '../services/firestore_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final String userId;
-  final String name; // Nome da Auth (potenzialmente vuoto)
-  final String email; // Email da Auth (affidabile)
+  final String name;
+  final String email;
   const OnboardingScreen({super.key, required this.userId, required this.name, required this.email});
 
   @override
@@ -19,6 +19,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   List<String> _canTeach = [];
   List<String> _wantsToLearn = [];
   bool _isLoading = false;
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
 
   final List<String> _availableSkills = const [
     'Cucina', 'Pianoforte', 'Programmazione', 'Lingua Spagnola',
@@ -44,46 +46,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; });
+    setState(() => _isLoading = true);
 
-    // Pulizia e fallback del nome. Se widget.name è vuoto, usa l'email come nome.
     final finalName = widget.name.isNotEmpty ? widget.name : widget.email.split('@')[0];
-
-    // L'email di Auth è la fonte più affidabile per l'email del profilo.
     final finalEmail = widget.email;
+    final bio = _bioController.text.trim();
+    final age = int.tryParse(_ageController.text.trim());
 
     final newProfile = UserProfile(
       userId: widget.userId,
-      email: finalEmail, // Email di Auth garantita
-      name: finalName, // Nome pulito o derivato
+      email: finalEmail,
+      name: finalName,
       canTeach: _canTeach,
       wantsToLearn: _wantsToLearn,
-      onboardingCompleted: true, // Marcare come completato
+      onboardingCompleted: true,
+      bio: bio,
+      age: age,
+      imageUrl: '', id: '',
     );
 
     try {
       await firestoreService.saveUserProfile(newProfile);
-      // Il MainLayout vedrà l'aggiornamento e cambierà schermata automaticamente
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Errore nel salvataggio del profilo: $e')),
       );
     } finally {
-      setState(() { _isLoading = false; });
+      setState(() => _isLoading = false);
     }
   }
 
-  // Funzione per passare al prossimo step. Ora _currentStep va da 0 a 1.
-  void _nextStep() {
-    setState(() => _currentStep = 1);
-  }
+  void _nextStep() => setState(() => _currentStep++);
 
   @override
   Widget build(BuildContext context) {
     final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-    final totalSteps = 2;
-
-    // Pulizia del nome per il messaggio di benvenuto.
     final welcomeName = widget.name.isNotEmpty ? widget.name : widget.email.split('@')[0];
 
     return Scaffold(
@@ -99,19 +96,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Benvenuto in SkillSwap, $welcomeName!',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo.shade600),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text('Benvenuto in SkillSwap, $welcomeName!',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo.shade600),
+                      textAlign: TextAlign.center),
                   const SizedBox(height: 10),
-                  Text(
-                    'Passaggio ${_currentStep + 1} di $totalSteps',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                  Text('Passaggio ${_currentStep + 1} di 3', style: const TextStyle(color: Colors.grey)),
                   const SizedBox(height: 30),
 
-                  // Step 0: Competenze da Insegnare
                   if (_currentStep == 0) ...[
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -132,9 +123,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           selected: isSelected,
                           selectedColor: Colors.yellow.shade100,
                           backgroundColor: Colors.grey.shade100,
-                          onSelected: (selected) => _toggleSkill(skill, true),
+                          onSelected: (_) => _toggleSkill(skill, true),
                           labelStyle: TextStyle(color: isSelected ? Colors.yellow.shade900 : Colors.black),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? Colors.yellow.shade600 : Colors.grey.shade300)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         );
                       }).toList(),
                     ),
@@ -144,13 +135,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo.shade600,
                         minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Avanti: Cosa vuoi imparare?', style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: const Text('Avanti: Cosa vuoi imparare?', style: TextStyle(color: Colors.white)),
                     ),
                   ],
 
-                  // Step 1: Competenze da Imparare
                   if (_currentStep == 1) ...[
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -171,11 +160,39 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           selected: isSelected,
                           selectedColor: Colors.indigo.shade100,
                           backgroundColor: Colors.grey.shade100,
-                          onSelected: (selected) => _toggleSkill(skill, false),
+                          onSelected: (_) => _toggleSkill(skill, false),
                           labelStyle: TextStyle(color: isSelected ? Colors.indigo.shade900 : Colors.black),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? Colors.indigo.shade600 : Colors.grey.shade300)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         );
                       }).toList(),
+                    ),
+                    const SizedBox(height: 30),
+                    ElevatedButton(
+                      onPressed: _nextStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                      child: const Text('Avanti: Bio e Età', style: TextStyle(color: Colors.white)),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => setState(() => _currentStep = 0),
+                      child: Text('Torna indietro', style: TextStyle(color: Colors.indigo.shade500)),
+                    ),
+                  ],
+
+                  if (_currentStep == 2) ...[
+                    TextField(
+                      controller: _bioController,
+                      decoration: const InputDecoration(labelText: 'Scrivi una breve bio'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _ageController,
+                      decoration: const InputDecoration(labelText: 'Età'),
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 30),
                     _isLoading
@@ -183,15 +200,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         : ElevatedButton(
                       onPressed: () => _completeOnboarding(firestoreService),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: Colors.indigo.shade600,
                         minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('COMPLETA IL PROFILO', style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: const Text('Completa il profilo', style: TextStyle(color: Colors.white)),
                     ),
                     const SizedBox(height: 10),
                     TextButton(
-                      onPressed: () => setState(() => _currentStep = 0),
+                      onPressed: () => setState(() => _currentStep = 1),
                       child: Text('Torna indietro', style: TextStyle(color: Colors.indigo.shade500)),
                     ),
                   ],

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'navigation/app_router.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
-import 'screens/auth_wrapper.dart';
 import 'data/local_data.dart';
-import 'routing/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
