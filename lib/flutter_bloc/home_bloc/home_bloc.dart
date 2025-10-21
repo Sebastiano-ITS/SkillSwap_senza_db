@@ -6,6 +6,7 @@ import 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitial()) {
     on<LoadProfiles>((event, emit) async {
+
       final profiles = LocalData().getAllUsers();
       emit(HomeLoaded(profiles: profiles));
     });
