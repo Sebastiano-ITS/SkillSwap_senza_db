@@ -36,8 +36,8 @@ class ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Skills: ${profile.skills.join(', ')}'),
-                Text('Skills da imparare: ${profile.skillsToLearn.join(', ')}'),
+                Text('Skills: ${profile.canTeach.join(', ')}'),
+                Text('Skills da imparare: ${profile.wantsToLearn.join(', ')}'),
                 const SizedBox(height: 8),
                 Text(profile.bio),
               ],

@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       onboardingCompleted: true,
       bio: bio,
       age: age,
-      imageUrl: '', id: '',
+      imageUrl: '', uid: '',
     );
 
     try {

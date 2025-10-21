@@ -1,9 +1,9 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'navigation/app_router.dart';
-import 'services/auth_service.dart';
-import 'services/firestore_service.dart';
 import 'data/local_data.dart';
+import 'navigation/app_router.dart'; // Importa la variabile globale appRouter
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +18,7 @@ class SkillSwapApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthService>(create: (_) => AuthService()),
-        Provider<FirestoreService>(create: (_) => FirestoreService()),
-        StreamProvider<User?>(
-          create: (context) => context.read<AuthService>().userStream,
-          initialData: null,
-          catchError: (context, error) => null,
-        ),
+        ChangeNotifierProvider(create: (_) => AuthService()),
       ],
       child: MaterialApp.router(
         title: 'SkillSwap',
@@ -41,6 +35,7 @@ class SkillSwapApp extends StatelessWidget {
           ),
           fontFamily: 'Inter',
         ),
+        // Usa la configurazione del router globale
         routerConfig: appRouter,
       ),
     );

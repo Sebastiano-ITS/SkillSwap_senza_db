@@ -6,9 +6,15 @@ import 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitial()) {
     on<LoadProfiles>((event, emit) async {
-
-      final profiles = LocalData().getAllUsers();
-      emit(HomeLoaded(profiles: profiles));
+      try {
+        // Chiama il metodo per ottenere i dati
+        final profiles = LocalData().getAllUsers();
+        // Emette lo stato HomeLoaded con i profili
+        emit(HomeLoaded(profiles: profiles));
+      } catch (e) {
+        // Se si verifica un errore, emette lo stato HomeError
+        emit(HomeError(message: e.toString()));
+      }
     });
 
     on<SwipeRight>((event, emit) {

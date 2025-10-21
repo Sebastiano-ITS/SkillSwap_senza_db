@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class UserProfile {
-  final String id;
+  final String uid;
   final String userId;
   final String email;
   final String name;
@@ -15,7 +15,7 @@ class UserProfile {
   final bool onboardingCompleted;
 
   const UserProfile({
-    required this.id,
+    required this.uid,
     required this.userId,
     required this.email,
     required this.name,
@@ -31,7 +31,7 @@ class UserProfile {
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(
-      id: map['id'] ?? '',
+      uid: map['id'] ?? '',
       userId: map['userId'] ?? map['uid'] ?? '',
       email: map['email'] ?? '',
       name: map['name'] ?? '',
@@ -48,7 +48,7 @@ class UserProfile {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id': uid,
       'userId': userId,
       'email': email,
       'name': name,

@@ -1,134 +1,84 @@
-import 'dart:async';
-import '../data/local_data.dart';
+// lib/services/auth_service.dart
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import '../models/user_profile.dart'; // Assicurati che il percorso sia corretto
+import 'package:uuid/uuid.dart';
 
-// Classe per simulare l'utente di Firebase
-class User {
-  final String uid;
-  final String email;
-  final String displayName;
+class AuthService with ChangeNotifier {
+  UserProfile? _currentUser;
+  List<dynamic>? _usersData;
 
-  User({required this.uid, required this.email, required this.displayName});
-}
+  UserProfile? get currentUser => _currentUser;
+  bool get isLoggedIn => _currentUser != null;
 
-class AuthService {
-  // Istanza di LocalData
-  final LocalData _localData = LocalData();
-  
-  // Controller per lo stream dell'utente
-  final StreamController<User?> _userStreamController = StreamController<User?>.broadcast();
-  
-  // Stato di caricamento iniziale per l'AuthWrapper
-  bool _isInitialLoading = true;
+  // Metodo per caricare i dati dal JSON una sola volta
+  Future<void> _loadUsersData() async {
+    if (_usersData == null) {
+      final jsonString = await rootBundle.loadString('assets/data/users.json');
+      final decodedJson = json.decode(jsonString);
 
-  // Getter per lo stato di caricamento (utilizzato in main.dart)
-  bool? get isInitialLoading => _isInitialLoading;
-
-  // Stream per ascoltare i cambiamenti dello stato di autenticazione dell'utente
-  Stream<User?> get userStream {
-    // Inizializza i dati locali se non è già stato fatto
-    _initializeLocalData();
-    
-    // Restituisci lo stream
-    return _userStreamController.stream;
-  }
-  
-  // Metodo per inizializzare i dati locali
-  Future<void> _initializeLocalData() async {
-    if (_isInitialLoading) {
-      await _localData.initialize();
-      
-      // Controlla se c'è un utente corrente
-      if (_localData.currentUserId != null) {
-        final userProfile = _localData.getUserById(_localData.currentUserId!);
-        if (userProfile != null) {
-          _userStreamController.add(User(
-            uid: userProfile.userId,
-            email: userProfile.email,
-            displayName: userProfile.name,
-          ));
-        } else {
-          _userStreamController.add(null);
-        }
-      } else {
-        _userStreamController.add(null);
-      }
-      
-      // Imposta isInitialLoading a false dopo un breve ritardo
-      Future.delayed(Duration(milliseconds: 50), () {
-        _isInitialLoading = false;
-      });
+      // --- CORREZIONE CHIAVE ---
+      // Il tuo JSON è direttamente una lista, quindi non dobbiamo accedere a 'users'.
+      _usersData = decodedJson as List<dynamic>;
     }
   }
 
-  /// ----------------------------------------------------------------------
-  /// Metodi di Autenticazione (Utilizzati in login_screen.dart)
-  /// ----------------------------------------------------------------------
-
-  // 1. Metodo di Registrazione (Sign Up)
-  Future<void> signUp(String email, String password, String name) async {
-    try {
-      final userId = _localData.registerUser(email, password, name);
-      
-      if (userId != null) {
-        // Notifica lo stream che c'è un nuovo utente
-        final userProfile = _localData.getUserById(userId);
-        if (userProfile != null) {
-          _userStreamController.add(User(
-            uid: userProfile.userId,
-            email: userProfile.email,
-            displayName: userProfile.name,
-          ));
-        }
-      } else {
-        throw Exception('Email già in uso');
-      }
-    } catch (e) {
-      throw Exception('Errore durante la registrazione: $e');
-    }
-  }
-
-  // 2. Metodo di Accesso (Sign In)
+  // Metodo di SignIn (ora dovrebbe funzionare correttamente)
   Future<void> signIn(String email, String password) async {
-    try {
-      final success = _localData.authenticateUser(email, password);
-      
-      if (success) {
-        // Notifica lo stream che c'è un utente autenticato
-        if (_localData.currentUserId != null) {
-          final userProfile = _localData.getUserById(_localData.currentUserId!);
-          if (userProfile != null) {
-            _userStreamController.add(User(
-              uid: userProfile.userId,
-              email: userProfile.email,
-              displayName: userProfile.name,
-            ));
-          }
-        }
-      } else {
-        throw Exception('Email o password non validi');
-      }
-    } catch (e) {
-      throw Exception('Errore durante l\'accesso: $e');
+    await _loadUsersData();
+
+    final userJsonMap = _usersData?.firstWhere(
+          (user) => user['email'] == email && user['password'] == password,
+      orElse: () => null,
+    );
+
+    if (userJsonMap != null) {
+      // Il tuo UserProfile.fromMap si aspetta 'id' e 'userId', ma il JSON ha 'uid'.
+      // Dobbiamo adattare la mappa prima di passarla.
+      final adaptedMap = Map<String, dynamic>.from(userJsonMap);
+      adaptedMap['id'] = userJsonMap['uid'];
+      adaptedMap['userId'] = userJsonMap['uid'];
+
+      _currentUser = UserProfile.fromMap(adaptedMap);
+      notifyListeners();
+    } else {
+      throw Exception('Credenziali non valide. Riprova.');
     }
   }
 
-  User? get currentUser {
-    if (_localData.currentUserId != null) {
-      final userProfile = _localData.getUserById(_localData.currentUserId!);
-      if (userProfile != null) {
-        return User(
-          uid: userProfile.userId,
-          email: userProfile.email,
-          displayName: userProfile.name,
-        );
-      }
+  // Metodo di SignUp
+  Future<void> signUp(String email, String password, String name) async {
+    await _loadUsersData();
+
+    final emailExists = _usersData?.any((user) => user['email'] == email) ?? false;
+    if (emailExists) {
+      throw Exception('Questa email è già stata registrata.');
     }
-    return null;
+
+    const uuid = Uuid();
+    final newUserId = uuid.v4();
+
+    _currentUser = UserProfile(
+      uid: newUserId,
+      userId: newUserId,
+      email: email,
+      name: name,
+      age: 0,
+      imageUrl: 'https://via.placeholder.com/600x400',
+      bio: '',
+      canTeach: [],
+      wantsToLearn: [],
+      skills: [],
+      skillsToLearn: [],
+      onboardingCompleted: false,
+    );
+
+    notifyListeners();
   }
 
-  // 3. Metodo di Disconnessione (Sign Out)
   Future<void> signOut() async {
-    _localData.signOut();
-    _userStreamController.add(null);
+    _currentUser = null;
+    notifyListeners();
   }
 }

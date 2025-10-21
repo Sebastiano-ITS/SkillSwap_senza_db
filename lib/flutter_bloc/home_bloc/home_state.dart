@@ -9,6 +9,11 @@ class HomeLoaded extends HomeState {
   HomeLoaded({required this.profiles});
 }
 
+class HomeError extends HomeState {
+  final String message;
+  HomeError({required this.message});
+}
+
 class ProfileMatched extends HomeState {
   final UserProfile profile;
   ProfileMatched({required this.profile});
