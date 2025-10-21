@@ -61,7 +61,7 @@ class AuthService {
   }
 
   /// ----------------------------------------------------------------------
-  /// Metodi di Autenticazione (Utilizzati in auth_screen.dart)
+  /// Metodi di Autenticazione (Utilizzati in login_screen.dart)
   /// ----------------------------------------------------------------------
 
   // 1. Metodo di Registrazione (Sign Up)

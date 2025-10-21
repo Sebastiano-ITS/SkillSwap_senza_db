@@ -4,13 +4,11 @@ import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'screens/auth_wrapper.dart';
 import 'data/local_data.dart';
+import 'routing/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inizializza i dati locali
   await LocalData().initialize();
-  
   runApp(const SkillSwapApp());
 }
 
@@ -19,22 +17,17 @@ class SkillSwapApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MultiProvider per fornire tutti i servizi all'albero dei widget
     return MultiProvider(
       providers: [
-        Provider<AuthService>(
-          create: (_) => AuthService(),
-        ),
-        Provider<FirestoreService>(
-          create: (_) => FirestoreService(),
-        ),
+        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<FirestoreService>(create: (_) => FirestoreService()),
         StreamProvider<User?>(
           create: (context) => context.read<AuthService>().userStream,
           initialData: null,
           catchError: (context, error) => null,
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'SkillSwap',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -49,7 +42,7 @@ class SkillSwapApp extends StatelessWidget {
           ),
           fontFamily: 'Inter',
         ),
-        home: const AuthWrapper(),
+        routerConfig: appRouter,
       ),
     );
   }
