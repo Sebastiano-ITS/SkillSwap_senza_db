@@ -16,8 +16,8 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0;
-  List<String> _canTeach = [];
-  List<String> _wantsToLearn = [];
+  final List<String> _canTeach = [];
+  final List<String> _wantsToLearn = [];
   bool _isLoading = false;
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();

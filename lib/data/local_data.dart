@@ -1,8 +1,11 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-import '../models/user_profile.dart';
-import '../models/match_request.dart';
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+import '../models/match_request.dart';
+import '../models/user_profile.dart';
 
 /// Classe che gestisce i dati locali dell'applicazione
 class LocalData {
@@ -21,15 +24,69 @@ class LocalData {
   // Getter per l'utente corrente
   String? get currentUserId => _currentUserId;
 
-  // Metodo per inizializzare i dati
-  Future<void> initialize() async {
-    // Carica i dati degli utenti dal file JSON
-    final String usersJson = await rootBundle.loadString('assets/data/users.json');
-    _users = List<Map<String, dynamic>>.from(json.decode(usersJson));
+  void get newUserId => null;
 
-    // Carica i dati delle richieste di match dal file JSON
-    final String requestsJson = await rootBundle.loadString('assets/data/match_requests.json');
-    _matchRequests = List<Map<String, dynamic>>.from(json.decode(requestsJson));
+  // Metodo per inizializzare i dati
+  Future<void> initialize({AssetBundle? bundle}) async {
+    final AssetBundle assetBundle = bundle ?? rootBundle;
+
+    _users = await _loadJsonList(
+      assetBundle,
+      'assets/data/users.json',
+      'Utenti di partenza',
+    );
+
+    _matchRequests = await _loadJsonList(
+      assetBundle,
+      'assets/data/match_requests.json',
+      'Richieste di match',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _loadJsonList(
+      AssetBundle bundle,
+      String assetPath,
+      String description,
+      ) async {
+    try {
+      final String rawJson = await bundle.loadString(assetPath);
+      _guardAgainstEmpty(rawJson, assetPath, description);
+      return _decodeJsonList(rawJson, assetPath, description);
+    } on FlutterError catch (error) {
+      throw StateError(
+        'Impossibile caricare l\'asset "$assetPath" per "$description". '
+            'Assicurati che sia dichiarato in pubspec.yaml e che tu abbia eseguito "flutter pub get". '
+            'Dettagli originali: ${error.message}',
+      );
+    } on FormatException catch (error) {
+      throw StateError(
+        'Impossibile decodificare "$assetPath". Controlla che il JSON sia valido. '
+            'Errore: ${error.message}',
+      );
+    }
+  }
+
+  void _guardAgainstEmpty(String rawJson, String assetPath, String description) {
+    if (rawJson.trim().isEmpty) {
+      throw StateError(
+        'Il file "$assetPath" per "$description" è vuoto. '
+            'Verifica che l\'asset contenga dati di esempio validi.',
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _decodeJsonList(
+      String rawJson,
+      String assetPath,
+      String description,
+      ) {
+    final Object? decoded = json.decode(rawJson);
+    if (decoded is! List) {
+      throw StateError(
+        'Il contenuto di "$assetPath" non è una lista JSON valida per "$description".',
+      );
+    }
+    return List<Map<String, dynamic>>.from(decoded);
   }
 
   // Metodo per ottenere tutti gli utenti
@@ -55,89 +112,16 @@ class LocalData {
     final Map<String, dynamic> map = user.toMap();
     if (index != -1) {
       _users[index] = map;
-    } else {
-      _users.add(map);
-    }
-  }
-
-  // Metodo per ottenere tutte le richieste di match
-  List<MatchRequest> getAllMatchRequests() {
-    return _matchRequests.map((requestData) => MatchRequest(
-      id: requestData['id'],
-      senderId: requestData['senderId'],
-      senderName: requestData['senderName'],
-      receiverId: requestData['receiverId'],
-      skillRequested: requestData['skillRequested'],
-      message: requestData['message'],
-      timestamp: DateTime.parse(requestData['timestamp']),
-      accepted: requestData['accepted'] ?? false,
-    )).toList();
-  }
-
-  // Metodo per ottenere le richieste di match ricevute da un utente
-  List<MatchRequest> getReceivedRequests(String receiverId) {
-    return getAllMatchRequests()
-        .where((request) => request.receiverId == receiverId && !request.accepted)
-        .toList();
-  }
-
-  // Metodo per aggiungere una nuova richiesta di match
-  void addMatchRequest(MatchRequest request) {
-    final Map<String, dynamic> requestMap = request.toMap();
-    requestMap['id'] = 'request_${_matchRequests.length + 1}';
-    requestMap['timestamp'] = request.timestamp.toIso8601String();
-    _matchRequests.add(requestMap);
-  }
-
-  // Metodo per aggiornare lo stato di una richiesta di match
-  void updateRequestStatus(String requestId, bool accepted) {
-    final index = _matchRequests.indexWhere((r) => r['id'] == requestId);
-    if (index != -1) {
-      _matchRequests[index]['accepted'] = accepted;
-      _matchRequests[index]['acceptanceTimestamp'] = DateTime.now().toIso8601String();
-    }
-  }
-
-  // Metodo per autenticare un utente
-  bool authenticateUser(String email, String password) {
-    final user = _users.firstWhere(
-          (u) => u['email'] == email && u['password'] == password,
-      orElse: () => <String, dynamic>{},
-    );
-
-    if (user.isNotEmpty) {
-      _currentUserId = user['uid'] ?? user['id'];
-      return true;
-    }
-    return false;
-  }
-
-  // Metodo per registrare un nuovo utente
-  String? registerUser(String email, String password, String name) {
-    // Verifica se l'email è già in uso
-    final existingUser = _users.firstWhere(
-          (u) => u['email'] == email,
-      orElse: () => <String, dynamic>{},
-    );
-
-    if (existingUser.isNotEmpty) {
-      return null; // Email già in uso
-    }
-
-    // Crea un nuovo ID utente
-    final String newUserId = 'user_${_users.length + 1}';
-
-    // Crea un nuovo utente
     final Map<String, dynamic> newUser = {
-      'uid': newUserId,
-      'email': email,
-      'password': password, // In un'app reale, questa password dovrebbe essere criptata
-      'name': name,
-      'createdAt': DateTime.now().toIso8601String(),
-      'onboardingCompleted': false,
-      'canTeach': <String>[],
-      'wantsToLearn': <String>[],
-      'hourlyRate': 15.0,
+    'uid': newUserId,
+    'email': email,
+    'password': password, // In un'app reale, questa password dovrebbe essere criptata
+    'name': name,
+    'createdAt': DateTime.now().toIso8601String(),
+    'onboardingCompleted': false,
+    'canTeach': <String>[],
+    'wantsToLearn': <String>[],
+    'hourlyRate': 15.0,
     };
 
     // Aggiungi l'utente alla lista
@@ -147,10 +131,17 @@ class LocalData {
     _currentUserId = newUserId;
 
     return newUserId;
-  }
+    }
 
-  // Metodo per disconnettere l'utente
-  void signOut() {
+    // Metodo per disconnettere l'utente
+    void signOut() {
     _currentUserId = null;
+    }
+
+    @visibleForTesting
+    void resetForTesting() {
+    _users = <Map<String, dynamic>>[];
+    _matchRequests = <Map<String, dynamic>>[];
+    _currentUserId = null;
+    }
   }
-}

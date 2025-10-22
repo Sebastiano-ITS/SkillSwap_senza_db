@@ -7,15 +7,35 @@ import 'data/local_data.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LocalData().initialize();
-  runApp(const SkillSwapApp());
+  String? initializationError;
+
+  try {
+    await LocalData().initialize();
+  } on StateError catch (error, stackTrace) {
+    initializationError = 'Errore durante l\'inizializzazione: ${error.message}';
+    FlutterError.presentError(FlutterErrorDetails(exception: error, stack: stackTrace));
+  } catch (error, stackTrace) {
+    initializationError = 'Errore durante l\'inizializzazione: $error';
+    FlutterError.presentError(FlutterErrorDetails(exception: error, stack: stackTrace));
+  }
+
+  runApp(SkillSwapApp(initializationError: initializationError));
 }
 
 class SkillSwapApp extends StatelessWidget {
-  const SkillSwapApp({super.key});
+  const SkillSwapApp({super.key, this.initializationError});
+
+  final String? initializationError;
 
   @override
   Widget build(BuildContext context) {
+    if (initializationError != null) {
+      return MaterialApp(
+        title: 'SkillSwap',
+        home: _InitializationErrorScreen(message: initializationError!),
+      );
+    }
+
     return MultiProvider(
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
@@ -42,6 +62,28 @@ class SkillSwapApp extends StatelessWidget {
           fontFamily: 'Inter',
         ),
         routerConfig: appRouter,
+      ),
+    );
+  }
+}
+
+class _InitializationErrorScreen extends StatelessWidget {
+  const _InitializationErrorScreen({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }

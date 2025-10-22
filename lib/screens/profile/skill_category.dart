@@ -1,0 +1,1 @@
+enum SkillCategory { teach, learn }

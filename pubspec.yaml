@@ -2,7 +2,6 @@ name: skillswap
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 version: 1.0.0+1
@@ -13,13 +12,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  getwidget: ^7.0.0
 
   # Base Packages
   cupertino_icons: ^1.0.8
 
   # State Management
   provider: ^6.1.2
-  
+  equatable: ^2.0.5
+
   # Utilities
   path_provider: ^2.1.2
 
@@ -30,18 +31,24 @@ dependencies:
   go_router: ^16.2.5
   flutter_bloc: ^9.1.1
 
+  material_color_utilities: any
+  flutter_svg: ^2.2.1
+  url_launcher: ^6.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # The following section is specific to Flutter packages.
 flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application.
   uses-material-design: true
-  
+
   assets:
-    - assets/data/users.json
-    - assets/data/match_requests.json
-    - assets/images/logo.png
+    - assets/data/
     - assets/images/logo_no_bg.png
+    - assets/images/logo.png
