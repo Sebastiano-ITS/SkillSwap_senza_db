@@ -47,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         final userId = authService.getCurrentUserId();
         if (userId != null) {
-          context.go('/auth'); // Dopo registrazione, vai all'AuthWrapper
+          context.go('/auth');
         }
       }
     } catch (e) {
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/images/logo.png', height: 80),
+                  Image.asset('assets/images/logo_no_bg.png', height: 80),
                   const SizedBox(height: 10),
                   Text(
                     'SkillSwap',
