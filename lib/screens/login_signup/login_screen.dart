@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../services/auth_service.dart';
+import '../../screens/onboarding_screen.dart';
+import '../../models/user_profile.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,8 +18,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
 
   bool _isLogin = true;
-  String _errorMessage = '';
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  String _errorMessage = '';
+
+  void _togglePasswordVisibility() {
+    setState(() => _obscurePassword = !_obscurePassword);
+  }
 
   Future<void> _submitAuthForm(AuthService authService) async {
     setState(() {
@@ -26,18 +34,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       if (_isLogin) {
-        await authService.signIn(_emailController.text, _passwordController.text);
+        await authService.signIn(_emailController.text.trim(), _passwordController.text.trim());
+        final userProfile = authService.getCurrentUserProfile();
+        if (userProfile != null) {
+          context.go('/home', extra: userProfile);
+        }
       } else {
-        await authService.signUp(_emailController.text, _passwordController.text, _nameController.text);
+        await authService.signUp(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          _nameController.text.trim(),
+        );
+        final userId = authService.getCurrentUserId();
+        if (userId != null) {
+          context.go('/auth'); // Dopo registrazione, vai all'AuthWrapper
+        }
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -58,22 +76,19 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Image.asset('assets/images/logo.png', height: 80),
+                  const SizedBox(height: 10),
                   Text(
                     'SkillSwap',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo.shade700,
-                    ),
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     _isLogin ? 'Accedi per scambiare competenze' : 'Crea il tuo account SkillSwap',
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 30),
 
-                  // Campo Nome (solo per Signup)
                   if (!_isLogin)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 15.0),
@@ -81,13 +96,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _nameController,
                         decoration: const InputDecoration(
                           labelText: 'Nome',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                           prefixIcon: Icon(Icons.person),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                         ),
                       ),
                     ),
 
-                  // Campo Email
                   Padding(
                     padding: const EdgeInsets.only(bottom: 15.0),
                     child: TextField(
@@ -95,27 +109,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                         prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                       ),
                     ),
                   ),
 
-                  // Campo Password
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20.0),
                     child: TextField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
                         labelText: 'Password',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                        prefixIcon: Icon(Icons.lock),
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                          onPressed: _togglePasswordVisibility,
+                        ),
+                        border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                       ),
                     ),
                   ),
 
-                  // Messaggio di errore
                   if (_errorMessage.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 15.0),
@@ -126,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                  // Bottone principale
                   _isLoading
                       ? const CircularProgressIndicator()
                       : ElevatedButton(
@@ -143,13 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
-                  // Toggle tra Login e Signup
                   TextButton(
                     onPressed: () {
                       setState(() {
                         _isLogin = !_isLogin;
-                        _errorMessage = ''; // Resetta l'errore
+                        _errorMessage = '';
                       });
                     },
                     child: Text(

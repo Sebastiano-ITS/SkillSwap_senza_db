@@ -43,3 +43,5 @@ flutter:
   assets:
     - assets/data/users.json
     - assets/data/match_requests.json
+    - assets/images/logo.png
+    - assets/images/logo_no_bg.png

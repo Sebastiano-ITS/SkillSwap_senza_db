@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/auth_wrapper.dart';
-import '../screens/login_screen.dart';
+import '../screens/login_signup/login_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile_screen.dart';
