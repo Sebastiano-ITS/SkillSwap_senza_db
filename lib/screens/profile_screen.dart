@@ -1,13 +1,19 @@
+// lib/screens/profile_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/user_profile.dart';
-import '../services/firestore_service.dart';
+
+// Rimuoviamo le dipendenze da Firestore e Provider perché non le usiamo in questa versione
+// import 'package:provider/provider.dart';
+// import '../services/firestore_service.dart';
 
 class ProfileScreen extends StatelessWidget {
+  // Riceve i dati dell'utente direttamente dal router
   final UserProfile userProfile;
   const ProfileScreen({super.key, required this.userProfile});
 
+  // Widget helper per mostrare le card delle competenze
   Widget _buildSkillsCard({required String title, required List<String> skills, required IconData icon, required Color color}) {
     return Card(
       elevation: 5,
@@ -27,7 +33,7 @@ class ProfileScreen extends StatelessWidget {
             const Divider(height: 25, thickness: 1),
             if (skills.isEmpty)
               Text(
-                'Non hai ancora aggiunto nessuna competenza per ${title.toLowerCase()}.',
+                'Nessuna competenza aggiunta.',
                 style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
               )
             else
@@ -48,125 +54,76 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = Provider.of<FirestoreService>(context);
+    // Usiamo direttamente l'oggetto 'userProfile' passato al widget.
+    // Non c'è più bisogno di StreamBuilder o Provider.
+    final currentProfile = userProfile;
 
-    return StreamBuilder<UserProfile?>(
-      stream: firestoreService.streamUserProfile(userProfile.userId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const LoadingScreen(message: 'Caricamento Profilo...');
-        }
-
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const Center(child: Text('Impossibile caricare i dati del profilo.'));
-        }
-
-        final currentProfile = snapshot.data!;
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(currentProfile.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            backgroundColor: Colors.indigo.shade600,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(LucideIcons.edit),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Funzione Modifica Profilo non ancora implementata.')),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.indigo.shade500,
-                        child: Text(
-                          currentProfile.name.isNotEmpty ? currentProfile.name[0].toUpperCase() : 'U',
-                          style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(currentProfile.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      Text(currentProfile.email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
-                      if (currentProfile.age != null)
-                        Text('Età: ${currentProfile.age}', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
-                      if (currentProfile.bio != null && currentProfile.bio!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Text(
-                            currentProfile.bio!,
-                            style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        const Text('Il tuo ID Utente (UserId)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
-                        const SizedBox(height: 5),
-                        Text(currentProfile.userId, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _buildSkillsCard(
-                  title: 'Cosa posso INSEGNARE',
-                  skills: currentProfile.canTeach,
-                  icon: LucideIcons.zap,
-                  color: Colors.yellow.shade700,
-                ),
-                const SizedBox(height: 20),
-                _buildSkillsCard(
-                  title: 'Cosa voglio IMPARARE',
-                  skills: currentProfile.wantsToLearn,
-                  icon: LucideIcons.bookOpen,
-                  color: Colors.indigo.shade600,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class LoadingScreen extends StatelessWidget {
-  final String message;
-  const LoadingScreen({super.key, this.message = "Caricamento..."});
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(message),
+        title: Text(currentProfile.name, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.indigo.shade600,
         foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.edit),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funzione Modifica Profilo non ancora implementata.')),
+              );
+            },
+          ),
+        ],
       ),
-      body: const Center(
-        child: CircularProgressIndicator(color: Colors.indigo),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.indigo.shade500,
+                    child: Text(
+                      currentProfile.name.isNotEmpty ? currentProfile.name[0].toUpperCase() : 'U',
+                      style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(currentProfile.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(currentProfile.email, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                  if (currentProfile.age != null && currentProfile.age! > 0)
+                    Text('Età: ${currentProfile.age}', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                  if (currentProfile.bio.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        currentProfile.bio,
+                        style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSkillsCard(
+              title: 'Cosa posso INSEGNARE',
+              skills: currentProfile.canTeach,
+              icon: LucideIcons.zap,
+              color: Colors.yellow.shade700,
+            ),
+            const SizedBox(height: 20),
+            _buildSkillsCard(
+              title: 'Cosa voglio IMPARARE',
+              skills: currentProfile.wantsToLearn,
+              icon: LucideIcons.bookOpen,
+              color: Colors.indigo.shade600,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -9,13 +9,20 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<User?>();
+    final userProfile = context.read<AuthService>().getCurrentUserProfile();
 
     // Reindirizza in base allo stato dell'utente
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (user == null) {
         context.go('/login');
       } else {
-        context.go('/home');
+        // Passa SEMPRE il profilo utente come extra alla Home
+        if (userProfile != null) {
+          context.go('/home', extra: userProfile);
+        } else {
+          // In caso estremo, vai comunque a /home (mostrerà il fallback) o torna al login
+          context.go('/home');
+        }
       }
     });
 

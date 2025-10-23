@@ -6,6 +6,7 @@ import '../screens/login_signup/login_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/explore_screen.dart';
 import '../models/user_profile.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -39,17 +40,14 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/explore',
           builder: (context, state) {
-            // Evita errori se ExploreScreen non è esportato correttamente: placeholder minimale
-            return Scaffold(
-              appBar: AppBar(title: const Text('Explore')),
-              body: const Center(child: Text('Explore non disponibile.')),
-            );
+            // Usa la schermata reale di Explore
+            return const ExploreScreen();
           },
         ),
         GoRoute(
           path: '/chat',
           builder: (context, state) {
-            // Evita errori se ChatListScreen non è esportato correttamente: placeholder minimale
+            // Placeholder perché ChatListScreen non è implementata
             return Scaffold(
               appBar: AppBar(title: const Text('Chat')),
               body: const Center(child: Text('Chat non disponibile.')),

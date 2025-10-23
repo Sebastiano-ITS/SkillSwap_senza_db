@@ -25,8 +25,10 @@ class ProfileCard extends StatelessWidget {
                 Positioned(
                   bottom: 16,
                   left: 16,
-                  child: Text('${profile.name}, $ageText',
-                      style: const TextStyle(color: Colors.white, fontSize: 20)),
+                  child: Text(
+                    '${profile.name}, $ageText',
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
                 ),
               ],
             ),
@@ -36,8 +38,8 @@ class ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Skills: ${profile.skills.join(', ')}'),
-                Text('Skills da imparare: ${profile.skillsToLearn.join(', ')}'),
+                Text('Skills: ${profile.canTeach.join(', ')}'),
+                Text('Skills da imparare: ${profile.wantsToLearn.join(', ')}'),
                 const SizedBox(height: 8),
                 Text(profile.bio),
               ],
