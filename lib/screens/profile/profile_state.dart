@@ -25,7 +25,7 @@ class ProfileState extends Equatable {
     UserProfile? profile,
     String? errorMessage,
     bool? isPublic,
-    bool? acceptsMatches,
+    bool? acceptsMatches, required bool clearFeedback,
   }) {
     return ProfileState(
       status: status ?? this.status,
@@ -48,7 +48,7 @@ class ProfileState extends Equatable {
     return copyWith(
       status: ProfileStatus.loaded,
       profile: profile,
-      errorMessage: null,
+      errorMessage: null, clearFeedback: true,
     );
   }
 

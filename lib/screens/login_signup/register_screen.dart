@@ -1,36 +1,38 @@
-// lib/screens/login_signup/login_screen.dart
+// lib/screens/login_signup/register_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../theme/brand_palette.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _name = TextEditingController();
+  final _confirm = TextEditingController();
 
-  bool _isLogin = true;
-  bool _obscure = true;
+  bool _obscurePwd = true;
+  bool _obscureCfm = true;
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
+    _name.dispose();
     _email.dispose();
     _password.dispose();
-    _name.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -43,37 +45,18 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final auth = context.read<AuthService>();
-
     try {
-      if (_isLogin) {
-        await auth.signIn(_email.text.trim(), _password.text.trim());
-        final UserProfile? me = auth.getCurrentUserProfile();
+      await auth.signUp(
+        _email.text.trim(),
+        _password.text.trim(),
+        _name.text.trim(),
+      );
 
-        if (me != null && mounted) {
-          // 👇 Routing aggiornato: prima volta vai all’onboarding
-          if (me.onboardingCompleted == true) {
-            context.go('/home', extra: me);
-          } else {
-            context.go('/onboarding', extra: me.id); // passiamo l'id utente
-          }
-        } else {
-          setState(() => _error = 'Impossibile recuperare il profilo utente.');
-        }
-      } else {
-        await auth.signUp(
-          _email.text.trim(),
-          _password.text.trim(),
-          _name.text.trim(),
-        );
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registrazione completata. Accedi con le tue credenziali.')),
-        );
-        setState(() {
-          _isLogin = true;
-          _password.clear();
-        });
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registrazione completata. Accedi con le tue credenziali.')),
+      );
+      context.go('/login');
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -108,12 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Stack(
         children: [
-          // ✅ BACKGROUND PIENO SCHERMO
+          // Background pieno schermo
           Positioned.fill(
             child: Image.asset(
               'assets/images/background_color.png',
@@ -141,6 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.only(top: 6, bottom: 8),
                             child: Image.asset('assets/images/logo_no_bg.png', height: 96),
                           ),
+
                           // Titolo
                           ShaderMask(
                             shaderCallback: (rect) => const LinearGradient(
@@ -149,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               end: Alignment.centerRight,
                             ).createShader(rect),
                             child: Text(
-                              'SKILL SWAP',
+                              'CREA ACCOUNT',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 letterSpacing: 1.2,
                                 fontWeight: FontWeight.w800,
@@ -160,27 +143,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '“Insegna quello che sai, impara quello che vuoi”.',
+                            'Unisciti a SkillSwap e inizia a scambiare competenze.',
                             style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black87),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 22),
 
-                          if (!_isLogin) ...[
-                            TextFormField(
-                              controller: _name,
-                              textInputAction: TextInputAction.next,
-                              decoration: _decor('Nome', icon: Icons.person),
-                              validator: (v) {
-                                if (_isLogin) return null;
-                                if (v == null || v.trim().isEmpty) return 'Inserisci il tuo nome';
-                                if (v.trim().length < 2) return 'Il nome è troppo corto';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 14),
-                          ],
+                          // Nome
+                          TextFormField(
+                            controller: _name,
+                            textInputAction: TextInputAction.next,
+                            decoration: _decor('Nome', icon: Icons.person),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Inserisci il tuo nome';
+                              if (v.trim().length < 2) return 'Il nome è troppo corto';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
 
+                          // Email
                           TextFormField(
                             controller: _email,
                             keyboardType: TextInputType.emailAddress,
@@ -195,27 +177,53 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 14),
 
+                          // Password
                           TextFormField(
                             controller: _password,
-                            obscureText: _obscure,
+                            obscureText: _obscurePwd,
+                            textInputAction: TextInputAction.next,
                             decoration: _decor(
                               'Password',
                               icon: Icons.lock,
                               suffix: IconButton(
-                                tooltip: _obscure ? 'Mostra password' : 'Nascondi password',
-                                onPressed: () => setState(() => _obscure = !_obscure),
+                                tooltip: _obscurePwd ? 'Mostra password' : 'Nascondi password',
+                                onPressed: () => setState(() => _obscurePwd = !_obscurePwd),
                                 icon: Icon(
-                                  _obscure ? Icons.visibility_off : Icons.visibility,
+                                  _obscurePwd ? Icons.visibility_off : Icons.visibility,
                                   color: Colors.black54,
                                 ),
                               ),
                             ),
-                            onFieldSubmitted: (_) => _submit(),
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Inserisci la password';
                               if (v.length < 6) return 'Minimo 6 caratteri';
                               return null;
                             },
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Conferma password
+                          TextFormField(
+                            controller: _confirm,
+                            obscureText: _obscureCfm,
+                            decoration: _decor(
+                              'Conferma password',
+                              icon: Icons.lock_outline,
+                              suffix: IconButton(
+                                tooltip: _obscureCfm ? 'Mostra password' : 'Nascondi password',
+                                onPressed: () => setState(() => _obscureCfm = !_obscureCfm),
+                                icon: Icon(
+                                  _obscureCfm ? Icons.visibility_off : Icons.visibility,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Conferma la password';
+                              if (v != _password.text) return 'Le password non coincidono';
+                              return null;
+                            },
+                            onFieldSubmitted: (_) => _submit(),
                           ),
 
                           if (_error != null) ...[
@@ -225,44 +233,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 18),
 
+                          // CTA
                           _GradientButton(
                             onPressed: _loading ? null : _submit,
                             loading: _loading,
-                            label: _isLogin ? 'Login' : 'Crea account',
+                            label: 'Crea account',
                           ),
 
-                          TextButton(
-                            onPressed: _loading
-                                ? null
-                                : () => ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Funzione non disponibile in questa demo.')),
-                            ),
-                            style: TextButton.styleFrom(foregroundColor: BrandPalette.magenta),
-                            child: const Text('Dimenticata?'),
-                          ),
-
+                          // link Accedi
                           SizedBox(
                             width: double.infinity,
                             height: 44,
                             child: OutlinedButton(
-                              onPressed: _loading
-                                  ? null
-                                  : () {
-                                setState(() {
-                                  _isLogin = !_isLogin;
-                                  _error = null;
-                                });
-                              },
+                              onPressed: _loading ? null : () => context.go('/login'),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: BrandPalette.purple, width: 1.3),
                                 foregroundColor: BrandPalette.purple,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                               ),
-                              child: Text(_isLogin ? 'Registrati' : 'Accedi'),
+                              child: const Text('Hai già un account? Accedi'),
                             ),
                           ),
-
-                          SizedBox(height: size.height < 700 ? 6 : 0),
                         ],
                       ),
                     ),
@@ -357,7 +348,8 @@ class _GradientButtonState extends State<_GradientButton> {
               ),
               child: widget.loading
                   ? const SizedBox(
-                width: 22, height: 22,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.6,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

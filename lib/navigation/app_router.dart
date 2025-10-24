@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import '../screens/profile/onboarding_learn_screen.dart';
+import '../screens/login_signup/register_screen.dart';
 import '../screens/auth_wrapper.dart';
 import '../screens/login_signup/login_screen.dart';
+import '../screens/profile/onboarding_create_profile_screen.dart'; // ⬅️ import onboarding
+import '../screens/profile/onboarding_teach_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -13,6 +16,31 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/auth',
   routes: [
     GoRoute(
+      path: '/onboarding/learn',
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingLearnScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per lo step "imparare".')),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/onboarding/teach',
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingTeachScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per lo step delle competenze.')),
+        );
+      },
+    ),
+    // Schermate fuori dalla Shell (senza bottom bar)
+    GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthWrapper(),
     ),
@@ -20,6 +48,25 @@ final GoRouter appRouter = GoRouter(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) {
+        // ci aspettiamo l'userId passato in extra
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingCreateProfileScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per l’onboarding.')),
+        );
+      },
+    ),
+
+    // Schermate dentro la Shell (con bottom bar)
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
@@ -30,29 +77,20 @@ final GoRouter appRouter = GoRouter(
             if (extra is UserProfile) {
               return HomeScreen(currentUserProfile: extra);
             }
-            // Fallback: mostra messaggio se non è stato passato un UserProfile
-            return Scaffold(
-              appBar: AppBar(title: const Text('Home')),
-              body: const Center(child: Text('Dati utente mancanti per la schermata Home.')),
+            return const Scaffold(
+              body: Center(child: Text('Dati utente mancanti per la schermata Home.')),
             );
           },
         ),
         GoRoute(
           path: '/explore',
-          builder: (context, state) {
-            // Usa la schermata reale di Explore
-            return const ExploreScreen();
-          },
+          builder: (context, state) => const ExploreScreen(),
         ),
         GoRoute(
           path: '/chat',
-          builder: (context, state) {
-            // Placeholder perché ChatListScreen non è implementata
-            return Scaffold(
-              appBar: AppBar(title: const Text('Chat')),
-              body: const Center(child: Text('Chat non disponibile.')),
-            );
-          },
+          builder: (context, state) => const Scaffold(
+            body: Center(child: Text('Chat non disponibile.')),
+          ),
         ),
         GoRoute(
           path: '/profile',
@@ -61,10 +99,8 @@ final GoRouter appRouter = GoRouter(
             if (profile is UserProfile) {
               return ProfileScreen(userId: profile.id);
             }
-            // Fallback: mostra messaggio se non è stato passato un UserProfile
-            return Scaffold(
-              appBar: AppBar(title: const Text('Profilo non disponibile')),
-              body: const Center(child: Text('Nessun profilo fornito per visualizzare la schermata profilo.')),
+            return const Scaffold(
+              body: Center(child: Text('Nessun profilo fornito per visualizzare la schermata profilo.')),
             );
           },
         ),
