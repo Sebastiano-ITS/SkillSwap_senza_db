@@ -5,7 +5,7 @@ import '../screens/auth_wrapper.dart';
 import '../screens/login_signup/login_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/profile/profile_screen.dart';
 import '../screens/explore_screen.dart';
 import '../models/user_profile.dart';
 
@@ -59,7 +59,7 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) {
             final profile = state.extra;
             if (profile is UserProfile) {
-              return ProfileScreen(userProfile: profile);
+              return ProfileScreen(userId: profile.id);
             }
             // Fallback: mostra messaggio se non è stato passato un UserProfile
             return Scaffold(

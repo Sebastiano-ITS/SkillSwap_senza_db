@@ -5,7 +5,7 @@ import '../models/user_profile.dart';
 import '../services/firestore_service.dart';
 import 'onboarding_screen.dart';
 import 'home/home_screen.dart';
-import 'profile_screen.dart';
+import 'profile/profile_screen.dart' as profile_screen; // Alias per evitare conflitti
 import 'settings_screen.dart';
 
 class MainLayout extends StatefulWidget {
@@ -46,7 +46,7 @@ class _MainLayoutState extends State<MainLayout> {
         // Schermate principali
         final List<Widget> screens = [
           HomeScreen(currentUserProfile: userProfile),
-          ProfileScreen(userProfile: userProfile),
+          profile_screen.ProfileScreen(userId: userProfile.id), // Utilizzo dell'alias e passaggio di userId
           SettingsScreen(userProfile: userProfile),
         ];
 

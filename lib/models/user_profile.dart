@@ -1,64 +1,74 @@
-import 'package:flutter/foundation.dart';
-
 class UserProfile {
   final String id;
-  final String userId;
   final String email;
   final String name;
   final int? age;
-  final String imageUrl;
-  final String bio;
+  final String? bio;
+  final String? imageUrl;
   final List<String> canTeach;
   final List<String> wantsToLearn;
-  final List<String> skills;
-  final List<String> skillsToLearn;
   final bool onboardingCompleted;
 
-  const UserProfile({
+  UserProfile({
     required this.id,
-    required this.userId,
     required this.email,
     required this.name,
     this.age,
-    this.imageUrl = 'https://via.placeholder.com/600x400',
-    this.bio = '',
-    this.canTeach = const [],
-    this.wantsToLearn = const [],
-    this.skills = const [],
-    this.skillsToLearn = const [],
+    this.bio,
+    this.imageUrl,
+    required this.canTeach,
+    required this.wantsToLearn,
     this.onboardingCompleted = false,
   });
 
-  factory UserProfile.fromMap(Map<String, dynamic> map) {
+  UserProfile copyWith({
+    String? id,
+    String? email,
+    String? name,
+    int? age,
+    String? bio,
+    String? imageUrl,
+    List<String>? canTeach,
+    List<String>? wantsToLearn,
+    bool? onboardingCompleted,
+  }) {
     return UserProfile(
-      id: map['id'] ?? '',
-      userId: map['userId'] ?? map['uid'] ?? '',
-      email: map['email'] ?? '',
-      name: map['name'] ?? '',
-      age: map['age'] is int ? map['age'] : (map['age'] != null ? int.tryParse(map['age'].toString()) : null),
-      imageUrl: map['imageUrl'] ?? '',
-      bio: map['bio'] ?? '',
-      canTeach: List<String>.from(map['canTeach'] ?? []),
-      wantsToLearn: List<String>.from(map['wantsToLearn'] ?? []),
-      skills: List<String>.from(map['skills'] ?? []),
-      skillsToLearn: List<String>.from(map['skillsToLearn'] ?? []),
-      onboardingCompleted: map['onboardingCompleted'] ?? false,
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      bio: bio ?? this.bio,
+      imageUrl: imageUrl ?? this.imageUrl,
+      canTeach: canTeach ?? List<String>.from(this.canTeach),
+      wantsToLearn: wantsToLearn ?? List<String>.from(this.wantsToLearn),
+      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );
   }
 
-  Map<String, dynamic> toMap() {
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      id: json['id'] as String? ?? '',
+      email: json['email'] as String? ?? 'Email non disponibile',
+      name: json['name'] as String? ?? 'Nuovo Utente',
+      age: json['age'] as int?,
+      bio: json['bio'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      canTeach: List<String>.from(json['canTeach'] ?? []),
+      wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
+      onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
       'email': email,
       'name': name,
       'age': age,
-      'imageUrl': imageUrl,
       'bio': bio,
+      'imageUrl': imageUrl,
       'canTeach': canTeach,
       'wantsToLearn': wantsToLearn,
-      'skills': skills,
-      'skillsToLearn': skillsToLearn,
       'onboardingCompleted': onboardingCompleted,
     };
   }

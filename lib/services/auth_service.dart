@@ -30,7 +30,7 @@ class AuthService {
         final userProfile = _localData.getUserById(_localData.currentUserId!);
         if (userProfile != null) {
           _userStreamController.add(User(
-            uid: userProfile.userId,
+            uid: userProfile.id,
             email: userProfile.email,
             displayName: userProfile.name,
           ));
@@ -48,12 +48,12 @@ class AuthService {
   }
 
   Future<void> signUp(String email, String password, String name) async {
-    final userId = _localData.registerUser(email, password, name);
+    final userId = await _localData.registerUser(email, password, name);
     if (userId != null) {
       final userProfile = _localData.getUserById(userId);
       if (userProfile != null) {
         _userStreamController.add(User(
-          uid: userProfile.userId,
+          uid: userProfile.id,
           email: userProfile.email,
           displayName: userProfile.name,
         ));
@@ -64,15 +64,17 @@ class AuthService {
   }
 
   Future<void> signIn(String email, String password) async {
-    final success = _localData.authenticateUser(email, password);
-    if (success) {
+    final success = await _localData.authenticateUser(email, password);
+    if (success && _localData.currentUserId != null) {
       final userProfile = _localData.getUserById(_localData.currentUserId!);
       if (userProfile != null) {
         _userStreamController.add(User(
-          uid: userProfile.userId,
+          uid: userProfile.id,
           email: userProfile.email,
           displayName: userProfile.name,
         ));
+      } else {
+        throw Exception('Profilo utente non trovato dopo il login.');
       }
     } else {
       throw Exception('Email o password non validi');
@@ -85,11 +87,14 @@ class AuthService {
   }
 
   User? get currentUser {
+    if (!_localData.isReady || _localData.currentUserId == null) {
+      return null;
+    }
     if (_localData.currentUserId != null) {
       final userProfile = _localData.getUserById(_localData.currentUserId!);
       if (userProfile != null) {
         return User(
-          uid: userProfile.userId,
+          uid: userProfile.id,
           email: userProfile.email,
           displayName: userProfile.name,
         );

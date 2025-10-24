@@ -1,8 +1,12 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-import '../models/user_profile.dart';
-import '../models/match_request.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
+
+import '../models/match_request.dart';
+import '../models/user_profile.dart';
 
 /// Classe che gestisce i dati locali dell'applicazione
 class LocalData {
@@ -15,63 +19,123 @@ class LocalData {
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _matchRequests = [];
 
+  // Gestione inizializzazione e file locali
+  bool _initialized = false;
+  Completer<void>? _initializationCompleter;
+  late File _usersFile;
+  late File _matchRequestsFile;
+
   // Utente corrente
   String? _currentUserId;
 
   // Getter per l'utente corrente
   String? get currentUserId => _currentUserId;
 
+  bool get isReady => _initialized;
+
   // Metodo per inizializzare i dati
   Future<void> initialize() async {
-    // Carica i dati degli utenti dal file JSON
-    final String usersJson = await rootBundle.loadString('assets/data/users.json');
-    _users = List<Map<String, dynamic>>.from(json.decode(usersJson));
+    if (_initialized) return;
+    if (_initializationCompleter != null) {
+      return _initializationCompleter!.future;
+    }
 
-    // Carica i dati delle richieste di match dal file JSON
-    final String requestsJson = await rootBundle.loadString('assets/data/match_requests.json');
-    _matchRequests = List<Map<String, dynamic>>.from(json.decode(requestsJson));
+    final completer = Completer<void>();
+    _initializationCompleter = completer;
+
+    try {
+      final Directory appDirectory = await getApplicationDocumentsDirectory();
+      final Directory dataDirectory = Directory('${appDirectory.path}/skillswap');
+      if (!await dataDirectory.exists()) {
+        await dataDirectory.create(recursive: true);
+      }
+
+      _usersFile = File('${dataDirectory.path}/users.json');
+      _matchRequestsFile = File('${dataDirectory.path}/match_requests.json');
+
+      await _ensureLocalFile(_usersFile, 'assets/data/users.json');
+      await _ensureLocalFile(_matchRequestsFile, 'assets/data/match_requests.json');
+
+      _users = await _readJsonFile(_usersFile);
+      _matchRequests = await _readJsonFile(_matchRequestsFile);
+
+      _initialized = true;
+      completer.complete();
+    } catch (error, stackTrace) {
+      completer.completeError(error, stackTrace);
+      _initializationCompleter = null;
+      rethrow;
+    }
+  }
+
+  // Modificato per forzare la sovrascrittura del file locale con la versione degli asset
+  Future<void> _ensureLocalFile(File file, String assetPath) async {
+    final String assetContent = await rootBundle.loadString(assetPath);
+    await file.writeAsString(assetContent);
+  }
+
+  Future<List<Map<String, dynamic>>> _readJsonFile(File file) async {
+    if (!await file.exists()) {
+      return <Map<String, dynamic>>[];
+    }
+    final String rawContent = await file.readAsString();
+    if (rawContent.isEmpty) {
+      return <Map<String, dynamic>>[];
+    }
+    final dynamic decoded = json.decode(rawContent);
+    if (decoded is List) {
+      return List<Map<String, dynamic>>.from(decoded.map<Map<String, dynamic>>(
+            (dynamic item) => Map<String, dynamic>.from(item as Map),
+      ));
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<void> _persistUsers() async {
+    if (!_initialized) return;
+    await _usersFile.writeAsString(json.encode(_users));
+  }
+
+  Future<void> _persistMatchRequests() async {
+    if (!_initialized) return;
+    await _matchRequestsFile.writeAsString(json.encode(_matchRequests));
   }
 
   // Metodo per ottenere tutti gli utenti
   List<UserProfile> getAllUsers() {
-    return _users.map((userData) => UserProfile.fromMap(userData)).toList();
+    return _users.map((userData) => UserProfile.fromJson(userData)).toList();
   }
 
   // Metodo per ottenere un utente specifico
   UserProfile? getUserById(String userId) {
     final userData = _users.firstWhere(
-          (user) => (user['uid'] == userId) || (user['id'] == userId),
+          (user) => user['id'] == userId,
       orElse: () => <String, dynamic>{},
     );
 
     if (userData.isEmpty) return null;
 
-    return UserProfile.fromMap(userData);
+    return UserProfile.fromJson(userData);
   }
 
   // Metodo per salvare un utente
-  void saveUser(UserProfile user) {
-    final index = _users.indexWhere((u) => (u['uid'] == user.userId) || (u['id'] == user.userId));
-    final Map<String, dynamic> map = user.toMap();
+  Future<void> saveUser(UserProfile user) async {
+    await initialize();
+    final index = _users.indexWhere((u) => u['id'] == user.id);
     if (index != -1) {
-      _users[index] = map;
+      _users[index] = user.toJson();
     } else {
-      _users.add(map);
+      _users.add(user.toJson());
     }
+    await _persistUsers();
   }
 
   // Metodo per ottenere tutte le richieste di match
   List<MatchRequest> getAllMatchRequests() {
-    return _matchRequests.map((requestData) => MatchRequest(
-      id: requestData['id'],
-      senderId: requestData['senderId'],
-      senderName: requestData['senderName'],
-      receiverId: requestData['receiverId'],
-      skillRequested: requestData['skillRequested'],
-      message: requestData['message'],
-      timestamp: DateTime.parse(requestData['timestamp']),
-      accepted: requestData['accepted'] ?? false,
-    )).toList();
+    return _matchRequests
+        .map((requestData) =>
+            MatchRequest.fromMap(requestData, requestData['id'] ?? ''))
+        .toList();
   }
 
   // Metodo per ottenere le richieste di match ricevute da un utente
@@ -82,38 +146,43 @@ class LocalData {
   }
 
   // Metodo per aggiungere una nuova richiesta di match
-  void addMatchRequest(MatchRequest request) {
+  Future<void> addMatchRequest(MatchRequest request) async {
+    await initialize();
     final Map<String, dynamic> requestMap = request.toMap();
     requestMap['id'] = 'request_${_matchRequests.length + 1}';
-    requestMap['timestamp'] = request.timestamp.toIso8601String();
     _matchRequests.add(requestMap);
+    await _persistMatchRequests();
   }
 
   // Metodo per aggiornare lo stato di una richiesta di match
-  void updateRequestStatus(String requestId, bool accepted) {
+  Future<void> updateRequestStatus(String requestId, bool accepted) async {
+    await initialize();
     final index = _matchRequests.indexWhere((r) => r['id'] == requestId);
     if (index != -1) {
       _matchRequests[index]['accepted'] = accepted;
       _matchRequests[index]['acceptanceTimestamp'] = DateTime.now().toIso8601String();
+      await _persistMatchRequests();
     }
   }
 
   // Metodo per autenticare un utente
-  bool authenticateUser(String email, String password) {
+  Future<bool> authenticateUser(String email, String password) async {
+    await initialize();
     final user = _users.firstWhere(
           (u) => u['email'] == email && u['password'] == password,
       orElse: () => <String, dynamic>{},
     );
 
     if (user.isNotEmpty) {
-      _currentUserId = user['uid'] ?? user['id'];
+      _currentUserId = user['id'];
       return true;
     }
     return false;
   }
 
   // Metodo per registrare un nuovo utente
-  String? registerUser(String email, String password, String name) {
+  Future<String?> registerUser(String email, String password, String name) async {
+    await initialize();
     // Verifica se l'email è già in uso
     final existingUser = _users.firstWhere(
           (u) => u['email'] == email,
@@ -129,7 +198,7 @@ class LocalData {
 
     // Crea un nuovo utente
     final Map<String, dynamic> newUser = {
-      'uid': newUserId,
+      'id': newUserId,
       'email': email,
       'password': password, // In un'app reale, questa password dovrebbe essere criptata
       'name': name,
@@ -137,11 +206,11 @@ class LocalData {
       'onboardingCompleted': false,
       'canTeach': <String>[],
       'wantsToLearn': <String>[],
-      'hourlyRate': 15.0,
     };
 
     // Aggiungi l'utente alla lista
     _users.add(newUser);
+    await _persistUsers();
 
     // Imposta l'utente corrente
     _currentUserId = newUserId;

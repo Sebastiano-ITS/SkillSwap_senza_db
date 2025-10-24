@@ -18,8 +18,9 @@ class ProfileCard extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: profile.imageUrl.isNotEmpty
-                      ? Image.network(profile.imageUrl, fit: BoxFit.cover)
+                  child: (profile.imageUrl != null && profile.imageUrl!.isNotEmpty)
+                      ? Image.network(profile.imageUrl!,
+                          fit: BoxFit.cover)
                       : Container(color: Colors.grey),
                 ),
                 Positioned(
@@ -41,7 +42,7 @@ class ProfileCard extends StatelessWidget {
                 Text('Skills: ${profile.canTeach.join(', ')}'),
                 Text('Skills da imparare: ${profile.wantsToLearn.join(', ')}'),
                 const SizedBox(height: 8),
-                Text(profile.bio),
+                Text(profile.bio ?? 'Nessuna biografia disponibile.'),
               ],
             ),
           ),
