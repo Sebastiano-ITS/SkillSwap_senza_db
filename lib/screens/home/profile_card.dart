@@ -18,15 +18,18 @@ class ProfileCard extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: profile.imageUrl.isNotEmpty
-                      ? Image.network(profile.imageUrl, fit: BoxFit.cover)
+                  child: (profile.imageUrl != null && profile.imageUrl!.isNotEmpty)
+                      ? Image.network(profile.imageUrl!,
+                          fit: BoxFit.cover)
                       : Container(color: Colors.grey),
                 ),
                 Positioned(
                   bottom: 16,
                   left: 16,
-                  child: Text('${profile.name}, $ageText',
-                      style: const TextStyle(color: Colors.white, fontSize: 20)),
+                  child: Text(
+                    '${profile.name}, $ageText',
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
                 ),
               ],
             ),
@@ -36,10 +39,10 @@ class ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Skills: ${profile.skills.join(', ')}'),
-                Text('Skills da imparare: ${profile.skillsToLearn.join(', ')}'),
+                Text('Skills: ${profile.canTeach.join(', ')}'),
+                Text('Skills da imparare: ${profile.wantsToLearn.join(', ')}'),
                 const SizedBox(height: 8),
-                Text(profile.bio),
+                Text(profile.bio ?? 'Nessuna biografia disponibile.'),
               ],
             ),
           ),

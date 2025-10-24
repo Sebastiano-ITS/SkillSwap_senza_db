@@ -54,15 +54,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final age = int.tryParse(_ageController.text.trim());
 
     final newProfile = UserProfile(
-      userId: widget.userId,
+      id: widget.userId,
       email: finalEmail,
       name: finalName,
       canTeach: _canTeach,
       wantsToLearn: _wantsToLearn,
       onboardingCompleted: true,
-      bio: bio,
+      bio: bio.isNotEmpty ? bio : null,
       age: age,
-      imageUrl: '', id: '',
+      imageUrl: null,
     );
 
     try {

@@ -1,20 +1,25 @@
-import 'package:skillswap/models/user_profile.dart';
-import 'package:skillswap/services/firestore_service.dart';
+import '../../data/local_data.dart';
+import '../../models/user_profile.dart';
 
-import 'profile_cubit.dart';
+abstract class ProfileRepository {
+  Future<UserProfile?> fetchProfile(String userId);
+  Future<UserProfile> saveProfile(UserProfile profile);
+}
 
-class FirestoreProfileRepository implements ProfileRepository {
-  FirestoreProfileRepository(this._service);
+class LocalProfileRepository implements ProfileRepository {
+  LocalProfileRepository({LocalData? localData}) : _localData = localData ?? LocalData();
 
-  final FirestoreService _service;
+  final LocalData _localData;
 
   @override
-  Stream<UserProfile?> watchProfile(String userId) {
-    return _service.streamUserProfile(userId);
+  Future<UserProfile?> fetchProfile(String userId) async {
+    await _localData.initialize();
+    return _localData.getUserById(userId);
   }
 
   @override
-  Future<void> save(UserProfile profile) {
-    return _service.saveUserProfile(profile);
+  Future<UserProfile> saveProfile(UserProfile profile) async {
+    await _localData.saveUser(profile);
+    return profile;
   }
 }
