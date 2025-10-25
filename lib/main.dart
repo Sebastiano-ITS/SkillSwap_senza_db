@@ -4,6 +4,8 @@ import 'navigation/app_router.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'data/local_data.dart';
+import 'services/local_data_service_explore.dart'; // Importa il nuovo servizio per explore page
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +42,7 @@ class SkillSwapApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<FirestoreService>(create: (_) => FirestoreService()),
+        Provider(create: (_) => LocalDataService()), // <-- per caricare user explore page
         StreamProvider<User?>(
           create: (context) => context.read<AuthService>().userStream,
           initialData: null,
