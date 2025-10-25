@@ -9,7 +9,7 @@ import '../screens/profile/onboarding_teach_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
-import '../screens/explore_screen.dart';
+import '../screens/explore/explore_screen.dart';
 import '../models/user_profile.dart';
 
 final GoRouter appRouter = GoRouter(
