@@ -11,6 +11,8 @@ import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/explore/explore_screen.dart';
 import '../models/user_profile.dart';
+import '../screens/explore/user_list_screen.dart'; // Importa la nuova schermata
+
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/auth',
@@ -27,6 +29,7 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
+
     GoRoute(
       path: '/onboarding/teach',
       builder: (context, state) {
@@ -84,7 +87,30 @@ final GoRouter appRouter = GoRouter(
         ),
         GoRoute(
           path: '/explore',
-          builder: (context, state) => const ExploreScreen(),
+          builder: (context, state) {
+            // 1. Recupera i dati passati durante la navigazione
+            final extra = state.extra;
+            if (extra is UserProfile) {
+              // 2. Se i dati sono del tipo corretto, passa il profilo a ExploreScreen
+              return ExploreScreen(currentUserProfile: extra);
+            }
+            // 3. Fallback di sicurezza se i dati non sono disponibili
+            return const Scaffold(
+              body: Center(child: Text('Dati utente mancanti per la schermata Explore.')),
+            );
+
+          },
+
+          // Definiamo la rotta della lista utenti come FIGLIA di /explore
+          routes: [
+            GoRoute(
+              path: 'users_by_skill/:skill', // NOTA: Niente '/' all'inizio
+              builder: (context, state) {
+                final skill = state.pathParameters['skill'] ?? 'sconosciuta';
+                return UserListScreen(skill: skill);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/chat',
