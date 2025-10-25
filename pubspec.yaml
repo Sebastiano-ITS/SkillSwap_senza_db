@@ -21,14 +21,19 @@ dependencies:
   provider: ^6.1.2
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
-  
+  bloc: any
+
   # Utilities
   path_provider: ^2.1.2
+  shared_preferences: ^2.2.3
+  palette_generator: ^0.3.3
+  image_picker: ^1.1.2
+  uuid: ^4.3.1
+  material_color_utilities: any
 
   # Icons & Utilities
   # Risoluzione del conflitto: usiamo la versione compatibile suggerita
   lucide_icons: ^0.257.0
-  uuid: ^4.3.1
   go_router: ^16.2.5
 
 dev_dependencies:
@@ -43,8 +48,9 @@ flutter:
   
   assets:
     - assets/data/users.json
-    - assets/data/match_requests.json
     - assets/data/explore_data.json
     - assets/images/logo.png
     - assets/images/logo_no_bg.png
     - assets/images/background_color.png
+    - assets/images/splash_art.gif
+    - assets/images/verified.png

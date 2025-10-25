@@ -13,10 +13,28 @@ import '../screens/explore/explore_screen.dart';
 import '../models/user_profile.dart';
 import '../screens/explore/user_list_screen.dart'; // Importa la nuova schermata
 
+import '../screens/profile/onboarding_ready_screen.dart';
+import '../screens/splash/splash_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/auth',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding/ready',
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingReadyScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per lo step finale.')),
+        );
+      },
+    ),
     GoRoute(
       path: '/onboarding/learn',
       builder: (context, state) {
@@ -29,7 +47,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-
     GoRoute(
       path: '/onboarding/teach',
       builder: (context, state) {
