@@ -107,7 +107,7 @@ class _OnboardingLearnScreenState extends State<OnboardingLearnScreen> {
       await LocalData().saveUser(updated);
       if (!mounted) return;
       // Fine onboarding (per ora): vai alla home con il profilo aggiornato
-      context.go('/home', extra: updated);
+      context.go('/onboarding/ready', extra: updated.id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Errore salvataggio: $e')),

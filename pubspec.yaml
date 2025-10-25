@@ -1,10 +1,7 @@
 name: skillswap
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
-# The following defines the version and build number for your application.
 version: 1.0.0+1
 
 environment:
@@ -21,29 +18,35 @@ dependencies:
   provider: ^6.1.2
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
-  
+
   # Utilities
   path_provider: ^2.1.2
+  palette_generator: ^0.3.3
 
+  image_picker: ^1.1.2
   # Icons & Utilities
-  # Risoluzione del conflitto: usiamo la versione compatibile suggerita
   lucide_icons: ^0.257.0
   uuid: ^4.3.1
+
+  # Navigation
   go_router: ^16.2.5
 
+  bloc: any
+  material_color_utilities: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
 
-# The following section is specific to Flutter packages.
+  material_color_utilities: any
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/data/users.json
     - assets/data/match_requests.json
     - assets/images/logo.png
     - assets/images/logo_no_bg.png
     - assets/images/background_color.png
+    - assets/images/splash_art.gif
+    - assets/images/verified.png
