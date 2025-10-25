@@ -1,0 +1,29 @@
+{
+  "interest_categories": [
+    {
+      "title": "Appassionati di Fotografia",
+      "description": "Trova chi condivide la tua passione per l'obiettivo.",
+      "icon": "camera",
+      "gradient": ["#FF7E5F", "#FEB47B"]
+    },
+    {
+      "title": "Amanti delle Lingue",
+      "description": "Connettiti con poliglotti e impara una nuova lingua.",
+      "icon": "languages",
+      "gradient": ["#6A82FB", "#FC5C7D"]
+    },
+    {
+      "title": "Musicisti",
+      "description": "Crea una jam session con chi suona i tuoi stessi generi.",
+      "icon": "music",
+      "gradient": ["#8E2DE2", "#4A00E0"]
+    },
+    {
+      "title": "Esperti di Cucina",
+      "description": "Scambia ricette e segreti culinari.",
+      "icon": "chef_hat",
+      "gradient": ["#f857a6", "#ff5858"]
+    }
+  ]
+
+}
