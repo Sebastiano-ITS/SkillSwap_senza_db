@@ -77,7 +77,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF9A8D4), Color(0xFFF472B6), Color(0xFFFBCFE8)],
+            colors: [Color(0xFFFFB200), Color(0xFFEB5B00), Color(0xFFD91656), Color(0xFF640D5F)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -207,9 +207,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Filtro per: $interestName')),
-          );
+          // Usa context.push per navigare alla lista di utenti che possono insegnare questo interesse.
+          // Il comportamento è ora identico a quello delle card delle categorie.
+          context.push('/explore/users_by_skill/$interestName');
         },
         borderRadius: BorderRadius.circular(15),
         child: Column(

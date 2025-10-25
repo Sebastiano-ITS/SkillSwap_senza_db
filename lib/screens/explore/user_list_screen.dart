@@ -102,15 +102,21 @@ class _UserListScreenState extends State<UserListScreen> {
 
   // Widget per la card del profilo utente
   Widget _buildUserProfileCard(UserProfile user) {
+
+    // Determina se c'è un URL valido per l'immagine
+    final bool hasImage = user.imageUrl != null && user.imageUrl!.startsWith('http');
+
     return Container(
       margin: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        image: DecorationImage(
-          // Placeholder per un'immagine di profilo, puoi sostituirla
-          image: NetworkImage('https://picsum.photos/seed/${user.id}/800/1200'),
+        color: hasImage ? Colors.grey : Colors.indigo.shade400,
+        image: hasImage
+            ? DecorationImage(
+          image: NetworkImage(user.imageUrl!),
           fit: BoxFit.cover,
-        ),
+        )
+            : null, // Nessuna immagine di sfondo se l'URL non è valido
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
