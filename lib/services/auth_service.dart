@@ -1,3 +1,4 @@
+// lib/services/auth_service.dart
 import 'dart:async';
 import '../data/local_data.dart';
 import '../models/user_profile.dart';
@@ -41,6 +42,7 @@ class AuthService {
         _userStreamController.add(null);
       }
 
+      // Piccolo delay per evitare frame jank su splash
       Future.delayed(const Duration(milliseconds: 50), () {
         _isInitialLoading = false;
       });
@@ -48,6 +50,7 @@ class AuthService {
   }
 
   Future<void> signUp(String email, String password, String name) async {
+    await _localData.initialize();
     final userId = await _localData.registerUser(email, password, name);
     if (userId != null) {
       final userProfile = _localData.getUserById(userId);
@@ -64,6 +67,7 @@ class AuthService {
   }
 
   Future<void> signIn(String email, String password) async {
+    await _localData.initialize();
     final success = await _localData.authenticateUser(email, password);
     if (success && _localData.currentUserId != null) {
       final userProfile = _localData.getUserById(_localData.currentUserId!);
@@ -90,15 +94,13 @@ class AuthService {
     if (!_localData.isReady || _localData.currentUserId == null) {
       return null;
     }
-    if (_localData.currentUserId != null) {
-      final userProfile = _localData.getUserById(_localData.currentUserId!);
-      if (userProfile != null) {
-        return User(
-          uid: userProfile.id,
-          email: userProfile.email,
-          displayName: userProfile.name,
-        );
-      }
+    final userProfile = _localData.getUserById(_localData.currentUserId!);
+    if (userProfile != null) {
+      return User(
+        uid: userProfile.id,
+        email: userProfile.email,
+        displayName: userProfile.name,
+      );
     }
     return null;
   }
