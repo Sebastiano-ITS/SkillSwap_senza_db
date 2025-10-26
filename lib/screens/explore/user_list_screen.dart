@@ -133,7 +133,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-    final bool hasImage = user.imageUrl != null && user.imageUrl!.startsWith('http');
+    final bool hasImage = user.localImages.isNotEmpty && user.localImages.first.startsWith('http');
     final bool hasBio = user.bio != null && user.bio!.isNotEmpty;
 
     return Container(
@@ -141,7 +141,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
         color: hasImage ? Colors.grey : Colors.indigo.shade400,
-        image: hasImage ? DecorationImage(image: NetworkImage(user.imageUrl!), fit: BoxFit.cover) : null,
+        image: hasImage ? DecorationImage(image: NetworkImage(user.localImages.first), fit: BoxFit.cover) : null,
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2),
         ],
