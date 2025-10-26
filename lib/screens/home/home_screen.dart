@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../features/profile/user_repository.dart';
 import '../../flutter_bloc/home_bloc/home_bloc.dart';
 import '../../flutter_bloc/home_bloc/home_event.dart';
@@ -7,6 +9,7 @@ import '../../flutter_bloc/home_bloc/home_state.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../services/match_services.dart';
+import '../home/swipe_overlay.dart';
 
 class HomeScreen extends StatelessWidget {
   final UserProfile currentUserProfile;
@@ -27,15 +30,46 @@ class HomeScreen extends StatelessWidget {
 
 class _HomeView extends StatefulWidget {
   final UserProfile currentUserProfile;
-  const _HomeView({super.key, required this.currentUserProfile});
+  const _HomeView({required this.currentUserProfile});
 
   @override
   State<_HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<_HomeView> {
+class _HomeViewState extends State<_HomeView> with SingleTickerProviderStateMixin {
+  static const double _likeThreshold = 150;
+  static const double _overlayThreshold = 100;
+  static const double _maxRotation = 0.35; // ~20°
   Offset _offset = Offset.zero;
-  String? _overlay; // 'like' or 'nope'
+  String? _overlay; // 'like' | 'nope'
+
+  late final AnimationController _springCtrl;
+  late final Animation<Offset> _springOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _springCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _springOffset = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
+      CurvedAnimation(parent: _springCtrl, curve: Curves.easeOut),
+    )..addListener(() {
+      setState(() => _offset = _springOffset.value);
+    });
+  }
+
+  @override
+  void dispose() {
+    _springCtrl.dispose();
+    super.dispose();
+  }
+
+  void _springBack() {
+    _springCtrl.stop();
+    (_springOffset as Tween<Offset>)
+      ..begin = _offset
+      ..end = Offset.zero;
+    _springCtrl.forward(from: 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +80,10 @@ class _HomeViewState extends State<_HomeView> {
           listener: (context, state) {
             if (state is ProfileMatched) {
               _showMatchDialog(state.profile);
+              HapticFeedback.mediumImpact();
+            }
+            if (state is HomeError) {
+              HapticFeedback.selectionClick();
             }
           },
           builder: (context, state) {
@@ -58,32 +96,45 @@ class _HomeViewState extends State<_HomeView> {
                   .where((p) => p.id != widget.currentUserProfile.id)
                   .toList();
 
+              if (profiles.isEmpty) {
+                return const Center(child: Text('Nessun profilo disponibile'));
+              }
+
               return Center(
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    for (int i = profiles.length - 1; i >= 0; i--)
+                    for (int i = 0; i < profiles.length; i++)
                       _buildCard(profiles[i], i == profiles.length - 1),
-                    if (_overlay != null)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _overlay == 'like'
-                                ? Colors.green.withOpacity(0.4)
-                                : Colors.red.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              _overlay == 'like'
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              size: 100,
-                              color: Colors.white,
+
+                    // Overlay di drag
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        ignoring: _overlay == null,
+                        child: AnimatedOpacity(
+                          opacity: _overlay == null ? 0 : 1,
+                          duration: const Duration(milliseconds: 120),
+                          child: Container(
+                            margin: const EdgeInsets.all(0),
+                            decoration: BoxDecoration(
+                              color: _overlay == 'like'
+                                  ? Colors.green.withOpacity(0.4)
+                                  : Colors.red.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                _overlay == 'like' ? Icons.check_circle : Icons.cancel,
+                                size: 100,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
+                    ),
+
+                    const SwipeOverlay(),
                   ],
                 ),
               );
@@ -96,44 +147,57 @@ class _HomeViewState extends State<_HomeView> {
     );
   }
 
-  Widget _buildCard(UserProfile profile, bool topCard) {
-    final double cardWidth = MediaQuery.of(context).size.width * 0.9;
-    final double cardHeight = MediaQuery.of(context).size.height * 0.75;
+  Widget _buildCard(UserProfile profile, bool isTopCard) {
+    final size = MediaQuery.of(context).size;
+    final double cardWidth = size.width * 0.9;
+    final double cardHeight = size.height * 0.75;
 
-    return Positioned(
-      child: GestureDetector(
-        onPanUpdate: topCard
-            ? (details) {
-          setState(() {
-            _offset += details.delta;
-            if (_offset.dx > 100) {
-              _overlay = 'like';
-            } else if (_offset.dx < -100) {
-              _overlay = 'nope';
-            } else {
-              _overlay = null;
+    // Calcola rotazione limitata
+    final double angle = isTopCard ? (_offset.dx / 300).clamp(-_maxRotation, _maxRotation) : 0;
+
+    return IgnorePointer(
+      ignoring: !isTopCard, // solo la top-card riceve gesture
+      child: Transform.translate(
+        offset: isTopCard ? _offset : Offset.zero,
+        child: Transform.rotate(
+          angle: angle,
+          child: GestureDetector(
+            onPanUpdate: isTopCard
+                ? (details) {
+              setState(() {
+                _offset += details.delta;
+
+                if (_offset.dx > _overlayThreshold) {
+                  _overlay = 'like';
+                } else if (_offset.dx < -_overlayThreshold) {
+                  _overlay = 'nope';
+                } else {
+                  _overlay = null;
+                }
+              });
             }
-          });
-        }
-            : null,
-        onPanEnd: topCard
-            ? (_) {
-          if (_offset.dx > 150) {
-            context.read<HomeBloc>().add(SwipeRight(profile));
-          } else if (_offset.dx < -150) {
-            context.read<HomeBloc>().add(SwipeLeft(profile));
-          }
+                : null,
+            onPanEnd: isTopCard
+                ? (_) {
+              if (_offset.dx > _likeThreshold) {
+                context.read<HomeBloc>().add(SwipeRight(profile));
+                HapticFeedback.lightImpact();
+              } else if (_offset.dx < -_likeThreshold) {
+                context.read<HomeBloc>().add(SwipeLeft(profile));
+                HapticFeedback.lightImpact();
+              } else {
+                _springBack();
+              }
 
-          setState(() {
-            _offset = Offset.zero;
-            _overlay = null;
-          });
-        }
-            : null,
-        child: Transform.translate(
-          offset: topCard ? _offset : Offset.zero,
-          child: Transform.rotate(
-            angle: topCard ? _offset.dx / 300 : 0,
+              setState(() {
+                _overlay = null;
+                // se è stato swipe valido, il bloc aggiornerà la lista al rebuild
+                if (_offset.dx.abs() > _likeThreshold) {
+                  _offset = Offset.zero;
+                }
+              });
+            }
+                : null,
             child: Container(
               width: cardWidth,
               height: cardHeight,
@@ -188,13 +252,11 @@ class _HomeViewState extends State<_HomeView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('${profile.name}$age',
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _buildBadgeGroup("Skills", profile.canTeach, Colors.pinkAccent),
               const SizedBox(height: 4),
-              _buildBadgeGroup(
-                  "Wants to learn", profile.wantsToLearn, Colors.orange),
+              _buildBadgeGroup("Wants to learn", profile.wantsToLearn, Colors.orange),
               const SizedBox(height: 8),
               Text(profile.bio ?? '',
                   style: const TextStyle(fontSize: 14, color: Colors.black87)),
@@ -210,8 +272,7 @@ class _HomeViewState extends State<_HomeView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,
