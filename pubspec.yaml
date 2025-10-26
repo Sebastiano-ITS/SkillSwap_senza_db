@@ -54,3 +54,5 @@ flutter:
     - assets/images/background_color.png
     - assets/images/splash_art.gif
     - assets/images/verified.png
+    - assets/data/
+    - assets/data/chats.json
