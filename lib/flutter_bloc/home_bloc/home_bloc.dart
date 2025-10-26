@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../features/profile/user_repository.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
@@ -11,6 +13,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final AuthService authService;
   final UsersRepository usersRepository;
 
+  List<UserProfile> _profiles = const [];
+
   HomeBloc({
     required this.matchService,
     required this.authService,
@@ -19,34 +23,55 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LoadProfiles>(_onLoad);
     on<SwipeRight>(_onSwipeRight);
     on<SwipeLeft>(_onSwipeLeft);
+    on<DialogClosed>(_onDialogClosed); // nuovo evento
   }
 
   Future<void> _onLoad(LoadProfiles event, Emitter<HomeState> emit) async {
+    emit(HomeLoading());
     try {
-      final profiles = await usersRepository.load();
-      emit(HomeLoaded(profiles: profiles));
+      final all = await usersRepository.load();
+
+      final me = authService.getCurrentUserProfile();
+      final filtered = me == null
+          ? List<UserProfile>.from(all)
+          : all.where((u) => u.id != me.id).toList();
+
+      _profiles = filtered;
+      emit(HomeLoaded(profiles: _profiles));
     } catch (e) {
       emit(HomeError(message: "Failed to load profiles: ${e.toString()}"));
     }
   }
 
-  void _onSwipeRight(SwipeRight event, Emitter<HomeState> emit) async {
+  Future<void> _onSwipeRight(SwipeRight event, Emitter<HomeState> emit) async {
     final currentUser = authService.getCurrentUserProfile();
-    if (currentUser == null) return;
-
     final target = event.profile;
 
-    final isReciprocal = target.wantsToLearn.any((skill) => currentUser.canTeach.contains(skill));
-
-    if (isReciprocal) {
+    try {
       await matchService.saveMatch(target.id);
-      emit(ProfileMatched(profile: target));
-    } else {
-      emit(ProfileMatched(profile: target));
-    }
+    } catch (_) {}
+
+    emit(ProfileMatched(profile: target));
   }
 
   void _onSwipeLeft(SwipeLeft event, Emitter<HomeState> emit) {
-    emit(ProfileRejected(profile: event.profile));
+    final target = event.profile;
+    emit(ProfileRejected(profile: target));
+    _removeAndRefresh(target, emit);
+  }
+
+  void _onDialogClosed(DialogClosed event, Emitter<HomeState> emit) {
+    // Dopo la chiusura del dialog rimuove la card e aggiorna UI
+    if (state is ProfileMatched) {
+      final matched = (state as ProfileMatched).profile;
+      _removeAndRefresh(matched, emit);
+    } else {
+      emit(HomeLoaded(profiles: _profiles));
+    }
+  }
+
+  void _removeAndRefresh(UserProfile target, Emitter<HomeState> emit) {
+    _profiles = _profiles.where((p) => p.id != target.id).toList();
+    emit(HomeLoaded(profiles: _profiles));
   }
 }

@@ -1,15 +1,26 @@
 import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
+import 'dart:math';
+import 'package:flutter/services.dart';
 import '../../models/user_profile.dart';
 
 class UsersRepository {
-  final String assetPath;
-  const UsersRepository({this.assetPath = 'assets/data/users.json'});
+  static List<UserProfile>? _cachedUsers; // mantiene la lista per la sessione
+
+  const UsersRepository();
 
   Future<List<UserProfile>> load() async {
-    final raw = await rootBundle.loadString(assetPath);
-    final List<dynamic> jsonList = json.decode(raw);
-    return jsonList.map((json) => UserProfile.fromJson(json)).toList();
+    // Se già caricati, restituisci la cache (mantiene ordine casuale)
+    if (_cachedUsers != null) return _cachedUsers!;
+
+    final jsonStr = await rootBundle.loadString('assets/data/users.json');
+    final List<dynamic> data = json.decode(jsonStr);
+
+    final users = data.map((e) => UserProfile.fromJson(e)).toList();
+
+    // 👉 Mescola SOLO una volta all’avvio (ordine casuale per la sessione)
+    users.shuffle(Random());
+
+    _cachedUsers = users;
+    return users;
   }
 }

@@ -1,25 +1,44 @@
+import 'package:equatable/equatable.dart';
 import '../../models/user_profile.dart';
 
-abstract class HomeState {}
+abstract class HomeState extends Equatable {
+  const HomeState();
+  @override
+  List<Object?> get props => [];
+}
 
 class HomeInitial extends HomeState {}
 
+class HomeLoading extends HomeState {}
+
 class HomeLoaded extends HomeState {
   final List<UserProfile> profiles;
-  HomeLoaded({required this.profiles});
-}
+  const HomeLoaded({required this.profiles});
 
-class HomeError extends HomeState {
-  final String message;
-  HomeError({required this.message});
+  @override
+  List<Object?> get props => [profiles];
 }
 
 class ProfileMatched extends HomeState {
   final UserProfile profile;
-  ProfileMatched({required this.profile});
+  const ProfileMatched({required this.profile});
+
+  @override
+  List<Object?> get props => [profile];
 }
 
 class ProfileRejected extends HomeState {
   final UserProfile profile;
-  ProfileRejected({required this.profile});
+  const ProfileRejected({required this.profile});
+
+  @override
+  List<Object?> get props => [profile];
+}
+
+class HomeError extends HomeState {
+  final String message;
+  const HomeError({required this.message});
+
+  @override
+  List<Object?> get props => [message];
 }
