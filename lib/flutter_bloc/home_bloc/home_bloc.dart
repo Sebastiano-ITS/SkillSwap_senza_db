@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/local_data.dart';
+import '../../features/profile/user_repository.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../services/match_services.dart';
@@ -9,19 +9,25 @@ import 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final MatchService matchService;
   final AuthService authService;
+  final UsersRepository usersRepository;
 
   HomeBloc({
     required this.matchService,
     required this.authService,
+    required this.usersRepository,
   }) : super(HomeInitial()) {
     on<LoadProfiles>(_onLoad);
     on<SwipeRight>(_onSwipeRight);
     on<SwipeLeft>(_onSwipeLeft);
   }
 
-  void _onLoad(LoadProfiles event, Emitter<HomeState> emit) async {
-    final profiles = LocalData().getAllUsers();
-    emit(HomeLoaded(profiles: profiles));
+  Future<void> _onLoad(LoadProfiles event, Emitter<HomeState> emit) async {
+    try {
+      final profiles = await usersRepository.load();
+      emit(HomeLoaded(profiles: profiles));
+    } catch (e) {
+      emit(HomeError(message: "Failed to load profiles: ${e.toString()}"));
+    }
   }
 
   void _onSwipeRight(SwipeRight event, Emitter<HomeState> emit) async {

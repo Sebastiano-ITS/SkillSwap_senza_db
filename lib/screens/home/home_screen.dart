@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/profile/user_repository.dart';
 import '../../flutter_bloc/home_bloc/home_bloc.dart';
 import '../../flutter_bloc/home_bloc/home_event.dart';
 import '../../flutter_bloc/home_bloc/home_state.dart';
 import '../../models/user_profile.dart';
+import '../../services/auth_service.dart';
+import '../../services/match_services.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   final UserProfile currentUserProfile;
   const HomeScreen({super.key, required this.currentUserProfile});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => HomeBloc(
+        matchService: MatchService(),
+        authService: context.read<AuthService>(),
+        usersRepository: const UsersRepository(),
+      )..add(LoadProfiles()),
+      child: _HomeView(currentUserProfile: currentUserProfile),
+    );
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final List<UserProfile> swipableProfiles = [];
-  Offset _offset = Offset.zero;
-  String? _overlay; // 'like' or 'nope'
+class _HomeView extends StatefulWidget {
+  final UserProfile currentUserProfile;
+  const _HomeView({super.key, required this.currentUserProfile});
 
   @override
-  void initState() {
-    super.initState();
-    context.read<HomeBloc>().add(LoadProfiles());
-  }
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
+  Offset _offset = Offset.zero;
+  String? _overlay; // 'like' or 'nope'
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           },
           builder: (context, state) {
+            if (state is HomeError) {
+              return Center(child: Text(state.message));
+            }
+
             if (state is HomeLoaded) {
               final profiles = state.profiles
                   .where((p) => p.id != widget.currentUserProfile.id)
@@ -123,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black26)],
+                boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black26)],
               ),
               child: Column(
                 children: [
@@ -144,8 +161,18 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SizedBox(
         height: 250,
         width: double.infinity,
-        child: profile.imageUrl != null && profile.imageUrl!.isNotEmpty
-            ? Image.network(profile.imageUrl!, fit: BoxFit.cover)
+        child: profile.localImages.isNotEmpty
+            ? Image.asset(
+          profile.localImages.first,
+          fit: BoxFit.cover,
+          errorBuilder: (c, e, s) => Center(
+            child: Text(
+              'Asset non trovato:\n${profile.localImages.first}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        )
             : Container(color: Colors.grey),
       ),
     );
@@ -161,11 +188,13 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('${profile.name}$age',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _buildBadgeGroup("Skills", profile.canTeach, Colors.pinkAccent),
               const SizedBox(height: 4),
-              _buildBadgeGroup("Wants to learn", profile.wantsToLearn, Colors.orange),
+              _buildBadgeGroup(
+                  "Wants to learn", profile.wantsToLearn, Colors.orange),
               const SizedBox(height: 8),
               Text(profile.bio ?? '',
                   style: const TextStyle(fontSize: 14, color: Colors.black87)),

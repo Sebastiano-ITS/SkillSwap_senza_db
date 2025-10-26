@@ -48,3 +48,27 @@ flutter:
     - assets/images/background_color.png
     - assets/images/splash_art.gif
     - assets/images/verified.png
+    - assets/images/users/mario/mario1.jpg
+    - assets/images/users/mario/mario2.jpg
+    - assets/images/users/mario/mario3.jpg
+    - assets/images/users/mario/mario4.jpeg
+    - assets/images/users/laura/laura1.jpg
+    - assets/images/users/laura/laura2.jpg
+    - assets/images/users/laura/laura3.jpg
+    - assets/images/users/laura/laura4.jpg
+    - assets/images/users/gio/gio1.jpg
+    - assets/images/users/gio/gio2.jpg
+    - assets/images/users/gio/gio3.jpg
+    - assets/images/users/gio/gio4.jpg
+    - assets/images/users/anna/anna1.jpg
+    - assets/images/users/anna/anna2.jpg
+    - assets/images/users/anna/anna3.jpg
+    - assets/images/users/anna/anna4.jpg
+    - assets/images/users/luca/luca1.jpg
+    - assets/images/users/luca/luca2.jpeg
+    - assets/images/users/luca/luca3.jpg
+    - assets/images/users/luca/luca4.jpg
+    - assets/images/users/ame/ame1.jpg
+    - assets/images/users/ame/ame2.jpg
+    - assets/images/users/ame/ame3.jpg
+    - assets/images/users/ame/ame4.jpg

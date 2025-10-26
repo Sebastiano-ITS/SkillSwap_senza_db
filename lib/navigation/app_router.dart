@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../features/profile/user_repository.dart';
 import '../flutter_bloc/home_bloc/home_bloc.dart';
 import '../flutter_bloc/home_bloc/home_event.dart';
 import '../screens/profile/onboarding_learn_screen.dart';
@@ -98,13 +99,11 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) {
             final extra = state.extra;
             if (extra is UserProfile) {
-              final authService = context.read<AuthService>();
-              final matchService = MatchService();
-
               return BlocProvider(
-                create: (_) => HomeBloc(
-                  matchService: matchService,
-                  authService: authService,
+                create: (context) => HomeBloc(
+                  matchService: MatchService(),
+                  authService: context.read<AuthService>(),
+                  usersRepository: const UsersRepository(),
                 )..add(LoadProfiles()),
                 child: HomeScreen(currentUserProfile: extra),
               );

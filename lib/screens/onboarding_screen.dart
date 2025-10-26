@@ -62,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       onboardingCompleted: true,
       bio: bio.isNotEmpty ? bio : null,
       age: age,
-      imageUrl: null,
+      localImages: const [],
     );
 
     try {
