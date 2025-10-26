@@ -43,6 +43,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/data/users.json
     - assets/images/logo.png
     - assets/images/logo_no_bg.png
     - assets/images/background_color.png
