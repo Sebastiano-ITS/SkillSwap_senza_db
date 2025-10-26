@@ -1,10 +1,7 @@
 name: skillswap
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
-# The following defines the version and build number for your application.
 version: 1.0.0+1
 
 environment:
@@ -32,7 +29,6 @@ dependencies:
   material_color_utilities: any
 
   # Icons & Utilities
-  # Risoluzione del conflitto: usiamo la versione compatibile suggerita
   lucide_icons: ^0.257.0
   go_router: ^16.2.5
 
@@ -42,15 +38,37 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
 
-# The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/data/users.json
-    - assets/data/explore_data.json
     - assets/images/logo.png
     - assets/images/logo_no_bg.png
     - assets/images/background_color.png
     - assets/images/splash_art.gif
     - assets/images/verified.png
+    - assets/images/users/mario/mario1.jpg
+    - assets/images/users/mario/mario2.jpg
+    - assets/images/users/mario/mario3.jpg
+    - assets/images/users/mario/mario4.jpeg
+    - assets/images/users/laura/laura1.jpg
+    - assets/images/users/laura/laura2.jpg
+    - assets/images/users/laura/laura3.jpg
+    - assets/images/users/laura/laura4.jpg
+    - assets/images/users/gio/gio1.jpg
+    - assets/images/users/gio/gio2.jpg
+    - assets/images/users/gio/gio3.jpg
+    - assets/images/users/gio/gio4.jpg
+    - assets/images/users/anna/anna1.jpg
+    - assets/images/users/anna/anna2.jpg
+    - assets/images/users/anna/anna3.jpg
+    - assets/images/users/anna/anna4.jpg
+    - assets/images/users/luca/luca1.jpg
+    - assets/images/users/luca/luca2.jpeg
+    - assets/images/users/luca/luca3.jpg
+    - assets/images/users/luca/luca4.jpg
+    - assets/images/users/ame/ame1.jpg
+    - assets/images/users/ame/ame2.jpg
+    - assets/images/users/ame/ame3.jpg
+    - assets/images/users/ame/ame4.jpg

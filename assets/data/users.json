@@ -5,7 +5,12 @@
     "password": "password123",
     "name": "Mario Rossi",
     "age": 19,
-    "imageUrl": "https://randomuser.me/api/portraits/men/10.jpg",
+    "localImages": [
+      "assets/images/users/mario/mario1.jpg",
+      "assets/images/users/mario/mario2.jpg",
+      "assets/images/users/mario/mario3.jpg",
+      "assets/images/users/mario/mario4.jpeg"
+    ],
     "bio": "sono un programmatore con una passione per la matematica e fisica. offro ripetizioni. Conosco poco l'inglese",
     "createdAt": "2023-01-15T10:30:00.000Z",
     "onboardingCompleted": true,
@@ -18,9 +23,14 @@
     "password": "password123",
     "name": "Laura Bianchi",
     "age": 26,
-    "imageUrl": "https://randomuser.me/api/portraits/women/28.jpg",
+    "localImages": [
+      "assets/images/users/laura/laura1.jpg",
+      "assets/images/users/laura/laura2.jpg",
+      "assets/images/users/laura/laura3.jpg",
+      "assets/images/users/laura/laura4.jpg"
+    ],
     "bio": "Sono bene le lingue. Vorrei imparare il C e C++ e la programmazione web",
-    "createdAt": "2023-02-20T14:45:00.000Z",
+    "createdAt": "2025-02-20T14:45:00.000Z",
     "onboardingCompleted": true,
     "canTeach": ["Inglese", "Francese", "Spagnolo"],
     "wantsToLearn": ["Programmazione", "Fotografia"]
@@ -31,9 +41,14 @@
     "password": "password123",
     "name": "Giovanni Verdi",
     "age": 24,
-    "imageUrl": "https://randomuser.me/api/portraits/men/10.jpg",
+    "localImages": [
+      "assets/images/users/gio/gio1.jpg",
+      "assets/images/users/gio/gio2.jpg",
+      "assets/images/users/gio/gio3.jpg",
+      "assets/images/users/gio/gio4.jpg"
+    ],
     "bio": "mi chiamo Giovanni mi piace fare le foto artistische. Ma la matematica e il francese non li capisco proprio.",
-    "createdAt": "2023-03-10T09:15:00.000Z",
+    "createdAt": "2024-03-10T09:15:00.000Z",
     "onboardingCompleted": true,
     "canTeach": ["Fotografia", "Design", "Marketing"],
     "wantsToLearn": ["Matematica", "Francese"]
@@ -44,7 +59,12 @@
     "password": "password123",
     "name": "Anna Neri",
     "age": 18,
-    "imageUrl": "https://randomuser.me/api/portraits/women/10.jpg",
+    "localImages": [
+      "assets/images/users/anna/anna1.jpg",
+      "assets/images/users/anna/anna2.jpg",
+      "assets/images/users/anna/anna3.jpg",
+      "assets/images/users/anna/anna4.jpg"
+    ],
     "bio": "mi chiamo anna mi piace fare le foto e ci tengo alla mia salute nel cucinare. Ma la matematica non la capisco proprio.",
     "createdAt": "2023-04-05T16:20:00.000Z",
     "onboardingCompleted": false,
@@ -57,11 +77,34 @@
     "password": "password123",
     "name": "Luca Gialli",
     "age": 30,
-    "imageUrl": "https://randomuser.me/api/portraits/men/18.jpg",
+    "localImages": [
+      "assets/images/users/luca/luca1.jpg",
+      "assets/images/users/luca/luca2.jpeg",
+      "assets/images/users/luca/luca3.jpg",
+      "assets/images/users/luca/luca4.jpg"
+    ],
     "bio": "mi chiamo luca sono laureato in storia antica. Ma non so cucinare",
-    "createdAt": "2023-05-12T11:10:00.000Z",
+    "createdAt": "2022-05-12T11:10:00.000Z",
     "onboardingCompleted": true,
     "canTeach": ["Storia", "Geografia", "Letteratura"],
     "wantsToLearn": ["Cucina", "Fotografia"]
+  },
+  {
+    "id": "user_6",
+    "email": "amelia.riso@example.com",
+    "password": "password123",
+    "name": "Amelia Riso",
+    "age": 22,
+    "localImages": [
+      "assets/images/users/ame/ame1.jpg",
+      "assets/images/users/ame/ame2.jpg",
+      "assets/images/users/ame/ame3.jpg",
+      "assets/images/users/ame/ame4.jpg"
+    ],
+    "bio": "mi chiamo amelia mi piace fare le foto e ci tengo alla mia salute nel cucinare. Ma la matematica non la capisco proprio.",
+    "createdAt": "2023-04-05T16:20:00.000Z",
+    "onboardingCompleted": false,
+    "canTeach": ["Storia", "Design", "Francese"],
+    "wantsToLearn": ["Letteratura", "Marketing"]
   }
 ]
