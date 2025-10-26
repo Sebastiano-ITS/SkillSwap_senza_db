@@ -133,15 +133,27 @@ class _UserProfileCardState extends State<UserProfileCard> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-    final bool hasImage = user.imageUrl != null && user.imageUrl!.startsWith('http');
+    // 1. Controlla se la lista di immagini locali non è vuota.
+    final bool hasImages = user.localImages.isNotEmpty;
+    // 2. Prendi la prima immagine come immagine di copertina.
+    final String? coverImage = hasImages ? user.localImages.first : null;
+
     final bool hasBio = user.bio != null && user.bio!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        color: hasImage ? Colors.grey : Colors.indigo.shade400,
-        image: hasImage ? DecorationImage(image: NetworkImage(user.imageUrl!), fit: BoxFit.cover) : null,
+        // 3. Usa un colore di sfondo se non ci sono immagini.
+        color: hasImages ? Colors.grey : Colors.indigo.shade400,
+        // 4. Usa DecorationImage con AssetImage se c'è un'immagine.
+        image: hasImages
+            ? DecorationImage(
+          // Usa AssetImage per le risorse locali!
+          image: AssetImage(coverImage!),
+          fit: BoxFit.cover,
+        )
+            : null,
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2),
         ],
@@ -160,8 +172,8 @@ class _UserProfileCardState extends State<UserProfileCard> {
               ),
             ),
           ),
-          // Avatar di fallback se non c'è immagine
-          if (!hasImage)
+          // Avatar di fallback se non ci sono immagini
+          if (!hasImages) // Modificato da !hasImage a !hasImages
             Center(
               child: CircleAvatar(
                 radius: 80,

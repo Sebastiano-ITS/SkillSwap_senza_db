@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../features/profile/user_repository.dart';
+import '../flutter_bloc/home_bloc/home_bloc.dart';
+import '../flutter_bloc/home_bloc/home_event.dart';
 import '../screens/profile/onboarding_learn_screen.dart';
 import '../screens/login_signup/register_screen.dart';
 import '../screens/auth_wrapper.dart';
@@ -18,6 +22,8 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_detail_screen.dart';
 import '../models/chat.dart';
+import '../services/auth_service.dart';
+import '../services/match_services.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -98,8 +104,16 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) {
             final extra = state.extra;
             if (extra is UserProfile) {
-              return HomeScreen(currentUserProfile: extra);
+              return BlocProvider(
+                create: (context) => HomeBloc(
+                  matchService: MatchService(),
+                  authService: context.read<AuthService>(),
+                  usersRepository: const UsersRepository(),
+                )..add(LoadProfiles()),
+                child: HomeScreen(currentUserProfile: extra),
+              );
             }
+
             return const Scaffold(
               body: Center(child: Text('Dati utente mancanti per la schermata Home.')),
             );

@@ -1,4 +1,3 @@
-// lib/screens/profile/profile_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +83,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final String targetPath = '${dir.path}/${_user!.id}.$ext';
     await File(file.path).copy(targetPath);
 
-    final updated = _user!.copyWith(imageUrl: targetPath);
+    final updated = _user!.copyWith(localImages: [targetPath]);
+    await _saveUser(updated);
     await _saveUser(updated);
   }
 
@@ -228,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // Avatar con pulsante cambio
                               Stack(
                                 children: [
-                                  _Avatar(imagePath: u.imageUrl),
+                                  _Avatar(imagePath: u.localImages.isNotEmpty ? u.localImages.first : null),
                                   Positioned(
                                     right: 0,
                                     bottom: 0,
