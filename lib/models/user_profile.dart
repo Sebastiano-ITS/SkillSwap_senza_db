@@ -1,4 +1,5 @@
 // lib/models/user_profile.dart
+
 class UserProfile {
   final String id;
   final String email;
@@ -8,6 +9,12 @@ class UserProfile {
   final int? age;
   final String? birthDateIso;
   final String? phone;
+
+  // 🔹 Nuovi campi coerenti con users.json
+  final String? location;
+  final double? distanceKm;
+
+  // Campi legacy compatibili
   final String? city;
   final double? radiusKm;
 
@@ -25,6 +32,8 @@ class UserProfile {
     this.age,
     this.birthDateIso,
     this.phone,
+    this.location,
+    this.distanceKm,
     this.city,
     this.radiusKm,
     this.bio,
@@ -41,6 +50,8 @@ class UserProfile {
     int? age,
     String? birthDateIso,
     String? phone,
+    String? location,
+    double? distanceKm,
     String? city,
     double? radiusKm,
     String? bio,
@@ -56,6 +67,8 @@ class UserProfile {
       age: age ?? this.age,
       birthDateIso: birthDateIso ?? this.birthDateIso,
       phone: phone ?? this.phone,
+      location: location ?? this.location,
+      distanceKm: distanceKm ?? this.distanceKm,
       city: city ?? this.city,
       radiusKm: radiusKm ?? this.radiusKm,
       bio: bio ?? this.bio,
@@ -70,12 +83,16 @@ class UserProfile {
     return UserProfile(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? 'Email non disponibile',
-      name: json['name'] as String? ?? 'Nuovo Utente',
+      name: json['name'] as String? ?? 'Utente senza nome',
       age: json['age'] is int
           ? json['age'] as int
           : (json['age'] is String ? int.tryParse(json['age']) : null),
       birthDateIso: json['birthDateIso'] as String?,
       phone: json['phone'] as String?,
+      location: json['location'] as String?,
+      distanceKm: (json['distanceKm'] is num)
+          ? (json['distanceKm'] as num).toDouble()
+          : null,
       city: json['city'] as String?,
       radiusKm: (json['radiusKm'] is num)
           ? (json['radiusKm'] as num).toDouble()
@@ -96,6 +113,8 @@ class UserProfile {
       'age': age,
       'birthDateIso': birthDateIso,
       'phone': phone,
+      'location': location,
+      'distanceKm': distanceKm,
       'city': city,
       'radiusKm': radiusKm,
       'bio': bio,
@@ -107,11 +126,10 @@ class UserProfile {
   }
 }
 
-/// Funzione helper per leggere in modo sicuro una lista di stringhe dal JSON
+/// Helper per leggere in modo sicuro una lista di stringhe dal JSON
 List<String> _readStringList(dynamic jsonValue) {
   if (jsonValue is List) {
-    // Assicura che ogni elemento sia una stringa
     return List<String>.from(jsonValue.map((item) => item.toString()));
   }
-  return []; // Ritorna una lista vuota se il valore non è una lista
+  return [];
 }
