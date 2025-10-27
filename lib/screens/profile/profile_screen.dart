@@ -1,4 +1,3 @@
-// lib/screens/profile/profile_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -25,12 +24,13 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Controller input
-  final _nameCtrl = TextEditingController();
+  // Controller input (stabili)
+  final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _cityCtrl = TextEditingController();
-  final _bioCtrl = TextEditingController();
+  final _cityCtrl  = TextEditingController();
+  final _bioCtrl   = TextEditingController();
+  final _birthCtrl = TextEditingController();
 
   double _radiusKm = 3;
   String? _birthIso;
@@ -43,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _phoneCtrl.dispose();
     _cityCtrl.dispose();
     _bioCtrl.dispose();
+    _birthCtrl.dispose();
     super.dispose();
   }
 
@@ -61,17 +62,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await File(file.path).copy(targetPath);
 
     try {
+      if (!mounted) return;
       cubit.updateImageUrl(targetPath);
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Immagine salvata localmente. Aggiungi updateImageUrl() nel Cubit per salvarla sul profilo.',
-            ),
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Immagine salvata localmente. Aggiungi updateImageUrl() nel Cubit per salvarla sul profilo.',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -94,20 +95,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (picked != null) {
       _birthIso = picked.toIso8601String().substring(0, 10);
+      _birthCtrl.text = _birthIso ?? '';
       try {
         cubit.updateBirthDateIso(_birthIso);
       } catch (_) {}
+      if (!mounted) return;
       setState(() {});
     }
   }
 
   InputDecoration _decor(String label, {String? hint}) {
-    // TextField sempre leggibili (testo scuro) su card glass
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle:
-      const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+      labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
       hintStyle: const TextStyle(color: Colors.black45),
       filled: true,
       fillColor: Colors.white.withOpacity(0.96),
@@ -130,13 +131,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _bindControllers(UserProfile u) {
-    _nameCtrl.text = u.name;
+    _nameCtrl.text  = u.name;
     _emailCtrl.text = u.email;
     _phoneCtrl.text = u.phone ?? '';
-    _cityCtrl.text = u.city ?? '';
-    _bioCtrl.text = u.bio ?? '';
-    _radiusKm = u.radiusKm ?? 3;
-    _birthIso = u.birthDateIso;
+    _cityCtrl.text  = u.city ?? '';
+    _bioCtrl.text   = u.bio ?? '';
+    _radiusKm       = u.radiusKm ?? 3;
+    _birthIso       = u.birthDateIso;
+    _birthCtrl.text = _birthIso ?? '';
   }
 
   void _toggleEdit(ProfileCubit cubit, ProfileState state) {
@@ -157,8 +159,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              if (!mounted) return;
               setState(() => _isEditing = false);
-              cubit.loadProfile(widget.userId);
+              cubit.loadProfile(widget.userId); // scarta modifiche
             },
             child: const Text('Annulla modifiche'),
           ),
@@ -168,14 +171,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _save(ProfileCubit cubit) {
-    cubit.saveProfile().then((_) => setState(() => _isEditing = false));
+    cubit.saveProfile().then((_) {
+      if (!mounted) return;
+      setState(() => _isEditing = false);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-      ProfileCubit(repository: LocalProfileRepository())..loadProfile(widget.userId),
+      create: (_) => ProfileCubit(repository: LocalProfileRepository())
+        ..loadProfile(widget.userId),
       child: BlocConsumer<ProfileCubit, ProfileState>(
         listenWhen: (prev, curr) =>
         prev.feedbackMessage != curr.feedbackMessage ||
@@ -208,15 +214,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 centerTitle: false,
                 backgroundColor: BrandPalette.purple,
                 elevation: 0,
-                actions: [
-                  _ProfileAppBarActions(
-                    isEditing: _isEditing,
-                    hasUnsavedChanges: state.hasUnsavedChanges,
-                    onEnterEdit: () => setState(() => _isEditing = true),
-                    onCancelEdit: () => _toggleEdit(cubit, state),
-                    onSave: state.hasUnsavedChanges ? () => _save(cubit) : null,
-                  ),
-                ],
               ),
               body: Center(
                 child: Text(state.errorMessage ?? 'Errore sconosciuto'),
@@ -231,24 +228,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return Scaffold(
             body: Stack(
               children: [
-                // background brand
-                Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
+                // Background brand
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          BrandPalette.amber,
-                          BrandPalette.orange,
-                          BrandPalette.magenta,
-                          BrandPalette.purple
-                        ],
+                        colors: [BrandPalette.amber, BrandPalette.orange, BrandPalette.magenta, BrandPalette.purple],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                     ),
                   ),
                 ),
-                // overlay per leggibilità
+                // Overlay leggibilità
                 Positioned.fill(
                   child: Container(color: Colors.white.withOpacity(0.15)),
                 ),
@@ -256,15 +248,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SafeArea(
                   child: Column(
                     children: [
-                      // AppBar custom responsiva (niente overflow)
+                      // Header responsive con Wrap per evitare overflow
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                        child: _ProfileHeaderBar(
-                          isEditing: _isEditing,
-                          onToggleEdit: () => _toggleEdit(cubit, state),
-                          onSave: (_isEditing && state.hasUnsavedChanges)
-                              ? () => _save(cubit)
-                              : null,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Profilo',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                alignment: WrapAlignment.end,
+                                children: [
+                                  if (_isEditing)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.18),
+                                        borderRadius: BorderRadius.circular(999),
+                                        border: Border.all(color: Colors.white.withOpacity(0.38)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.edit, size: 16, color: Colors.white),
+                                          SizedBox(width: 6),
+                                          Text('Modifica attiva',
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
+                                  TextButton(
+                                    onPressed: () => _toggleEdit(cubit, state),
+                                    child: Text(
+                                      _isEditing ? 'Annulla' : 'Modifica',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  FilledButton(
+                                    onPressed: _isEditing && state.hasUnsavedChanges ? () => _save(cubit) : null,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      disabledBackgroundColor: Colors.white.withOpacity(0.55),
+                                      foregroundColor: BrandPalette.purple,
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    ),
+                                    child: const Text('Salva'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -281,8 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   // Header
                                   _GlassCard(
                                     child: Row(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Stack(
                                           children: [
@@ -292,23 +339,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 right: 0,
                                                 bottom: 0,
                                                 child: InkWell(
-                                                  onTap: () =>
-                                                      _pickAvatar(u, cubit),
-                                                  borderRadius:
-                                                  BorderRadius.circular(20),
+                                                  onTap: () => _pickAvatar(u, cubit),
+                                                  borderRadius: BorderRadius.circular(20),
                                                   child: Container(
-                                                    padding:
-                                                    const EdgeInsets.all(6),
-                                                    decoration:
-                                                    const BoxDecoration(
+                                                    padding: const EdgeInsets.all(6),
+                                                    decoration: const BoxDecoration(
                                                       color: Colors.white,
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: const Icon(
                                                       Icons.edit,
                                                       size: 16,
-                                                      color:
-                                                      BrandPalette.purple,
+                                                      color: BrandPalette.purple,
                                                     ),
                                                   ),
                                                 ),
@@ -318,33 +360,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               TextField(
                                                 controller: _nameCtrl,
                                                 readOnly: !_isEditing,
-                                                style: const TextStyle(
-                                                    color: Colors.black87),
-                                                cursorColor:
-                                                BrandPalette.purple,
+                                                style: const TextStyle(color: Colors.black87),
+                                                cursorColor: BrandPalette.purple,
                                                 decoration: _decor('Nome'),
-                                                onChanged: (v) =>
-                                                    cubit.updateName(v),
+                                                onChanged: (v) => cubit.updateName(v),
                                               ),
                                               const SizedBox(height: 10),
                                               TextField(
                                                 controller: _emailCtrl,
                                                 readOnly: !_isEditing,
-                                                keyboardType:
-                                                TextInputType.emailAddress,
-                                                style: const TextStyle(
-                                                    color: Colors.black87),
-                                                cursorColor:
-                                                BrandPalette.purple,
+                                                keyboardType: TextInputType.emailAddress,
+                                                style: const TextStyle(color: Colors.black87),
+                                                cursorColor: BrandPalette.purple,
                                                 decoration: _decor('Email'),
-                                                onChanged: (v) =>
-                                                    cubit.updateEmail(v),
+                                                onChanged: (v) => cubit.updateEmail(v),
                                               ),
                                             ],
                                           ),
@@ -358,8 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   // Info base
                                   _GlassCard(
                                     child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const _SectionTitle(
                                           icon: Icons.badge_outlined,
@@ -372,19 +405,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               child: TextField(
                                                 controller: _phoneCtrl,
                                                 readOnly: !_isEditing,
-                                                keyboardType:
-                                                TextInputType.phone,
-                                                style: const TextStyle(
-                                                    color: Colors.black87),
-                                                cursorColor:
-                                                BrandPalette.purple,
-                                                decoration:
-                                                _decor('Cellulare'),
+                                                keyboardType: TextInputType.phone,
+                                                style: const TextStyle(color: Colors.black87),
+                                                cursorColor: BrandPalette.purple,
+                                                decoration: _decor('Cellulare'),
                                                 onChanged: (v) {
                                                   if (_isEditing) {
-                                                    try {
-                                                      cubit.updatePhone(v);
-                                                    } catch (_) {}
+                                                    try { cubit.updatePhone(v); } catch (_) {}
                                                   }
                                                 },
                                               ),
@@ -392,23 +419,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: GestureDetector(
-                                                onTap: _isEditing
-                                                    ? () =>
-                                                    _pickBirthDate(cubit)
-                                                    : null,
+                                                onTap: _isEditing ? () => _pickBirthDate(cubit) : null,
                                                 child: AbsorbPointer(
                                                   absorbing: true,
                                                   child: TextField(
-                                                    style: const TextStyle(
-                                                        color: Colors.black87),
-                                                    decoration: _decor(
-                                                      'Data di nascita',
-                                                      hint: 'aaaa-mm-gg',
-                                                    ),
-                                                    controller:
-                                                    TextEditingController(
-                                                        text:
-                                                        _birthIso ?? ''),
+                                                    controller: _birthCtrl,
+                                                    style: const TextStyle(color: Colors.black87),
+                                                    decoration: _decor('Data di nascita', hint: 'aaaa-mm-gg'),
                                                   ),
                                                 ),
                                               ),
@@ -422,16 +439,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               child: TextField(
                                                 controller: _cityCtrl,
                                                 readOnly: !_isEditing,
-                                                style: const TextStyle(
-                                                    color: Colors.black87),
-                                                cursorColor:
-                                                BrandPalette.purple,
+                                                style: const TextStyle(color: Colors.black87),
+                                                cursorColor: BrandPalette.purple,
                                                 decoration: _decor('Città'),
                                                 onChanged: (v) {
                                                   if (_isEditing) {
-                                                    try {
-                                                      cubit.updateCity(v);
-                                                    } catch (_) {}
+                                                    try { cubit.updateCity(v); } catch (_) {}
                                                   }
                                                 },
                                               ),
@@ -439,37 +452,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     'Raggio (km): ${_radiusKm.round()}',
-                                                    style: theme
-                                                        .textTheme.labelLarge
-                                                        ?.copyWith(
-                                                        color: Colors
-                                                            .black87),
+                                                    style: theme.textTheme.labelLarge?.copyWith(color: Colors.black87),
                                                   ),
                                                   Slider(
                                                     value: _radiusKm,
                                                     min: 1,
                                                     max: 50,
                                                     divisions: 49,
-                                                    activeColor: BrandPalette
-                                                        .magenta,
-                                                    thumbColor:
-                                                    BrandPalette.orange,
-                                                    label:
-                                                    '${_radiusKm.round()}',
+                                                    activeColor: BrandPalette.magenta,
+                                                    thumbColor: BrandPalette.orange,
+                                                    label: '${_radiusKm.round()}',
                                                     onChanged: _isEditing
                                                         ? (v) {
-                                                      setState(() =>
-                                                      _radiusKm = v);
-                                                      try {
-                                                        cubit
-                                                            .updateRadiusKm(
-                                                            v);
-                                                      } catch (_) {}
+                                                      setState(() => _radiusKm = v);
+                                                      try { cubit.updateRadiusKm(v); } catch (_) {}
                                                     }
                                                         : null,
                                                   ),
@@ -487,30 +487,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   // Bio
                                   _GlassCard(
                                     child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const _SectionTitle(
-                                            icon: Icons.notes, title: 'Bio'),
+                                        const _SectionTitle(icon: Icons.notes, title: 'Bio'),
                                         const SizedBox(height: 8),
                                         TextField(
                                           controller: _bioCtrl,
                                           readOnly: !_isEditing,
                                           maxLines: 5,
                                           minLines: 4,
-                                          style: const TextStyle(
-                                              color: Colors.black87),
+                                          style: const TextStyle(color: Colors.black87),
                                           cursorColor: BrandPalette.purple,
-                                          decoration: _decor(
-                                            'Scrivi una breve bio…',
-                                            hint:
-                                            'Chi sei, cosa insegni/cosa cerchi…',
-                                          ),
+                                          decoration: _decor('Scrivi una breve bio…',
+                                              hint: 'Chi sei, cosa insegni/cosa cerchi…'),
                                           onChanged: (v) {
                                             if (_isEditing) {
-                                              try {
-                                                cubit.updateBio(v);
-                                              } catch (_) {}
+                                              try { cubit.updateBio(v); } catch (_) {}
                                             }
                                           },
                                         ),
@@ -523,12 +515,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   // Skills: Can Teach
                                   _GlassCard(
                                     child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const _SectionTitle(
-                                            icon: Icons.school,
-                                            title: 'Puoi insegnare'),
+                                        const _SectionTitle(icon: Icons.school, title: 'Puoi insegnare'),
                                         const SizedBox(height: 10),
                                         EditableSkillList(
                                           values: u.canTeach,
@@ -536,43 +525,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           addLabel: 'Aggiungi competenza',
                                           onAdd: () {
                                             if (!_isEditing) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Attiva "Modifica" per aggiungere.'),
-                                                ),
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Attiva "Modifica" per aggiungere.')),
                                               );
                                               return;
                                             }
                                             _addSkillDialog(
-                                              onConfirm: (s) => context
-                                                  .read<ProfileCubit>()
-                                                  .addSkillToTeach(s),
+                                              onConfirm: (s) => context.read<ProfileCubit>().addSkillToTeach(s),
                                             );
                                           },
                                           onRemove: (s) {
                                             if (!_isEditing) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Attiva "Modifica" per rimuovere.'),
-                                                ),
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Attiva "Modifica" per rimuovere.')),
                                               );
                                               return;
                                             }
-                                            final c =
-                                            context.read<ProfileCubit>();
+                                            final c = context.read<ProfileCubit>();
                                             c.removeSkillToTeach(s);
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
                                                 content: Text('Rimossa: $s'),
                                                 action: SnackBarAction(
                                                   label: 'Annulla',
-                                                  onPressed: () =>
-                                                      c.addSkillToTeach(s),
+                                                  onPressed: () => c.addSkillToTeach(s),
                                                 ),
                                               ),
                                             );
@@ -582,9 +558,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         if (!_isEditing)
                                           const Text(
                                             'Tocca "Modifica" per gestire le competenze.',
-                                            style: TextStyle(
-                                                color: Colors.black54,
-                                                fontSize: 12),
+                                            style: TextStyle(color: Colors.black54, fontSize: 12),
                                           ),
                                       ],
                                     ),
@@ -595,12 +569,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   // Skills: Wants To Learn
                                   _GlassCard(
                                     child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const _SectionTitle(
-                                            icon: Icons.local_library,
-                                            title: 'Vuoi imparare'),
+                                        const _SectionTitle(icon: Icons.local_library, title: 'Vuoi imparare'),
                                         const SizedBox(height: 10),
                                         EditableSkillList(
                                           values: u.wantsToLearn,
@@ -608,43 +579,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           addLabel: 'Aggiungi obiettivo',
                                           onAdd: () {
                                             if (!_isEditing) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Attiva "Modifica" per aggiungere.'),
-                                                ),
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Attiva "Modifica" per aggiungere.')),
                                               );
                                               return;
                                             }
                                             _addSkillDialog(
-                                              onConfirm: (s) => context
-                                                  .read<ProfileCubit>()
-                                                  .addSkillToLearn(s),
+                                              onConfirm: (s) => context.read<ProfileCubit>().addSkillToLearn(s),
                                             );
                                           },
                                           onRemove: (s) {
                                             if (!_isEditing) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Attiva "Modifica" per rimuovere.'),
-                                                ),
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Attiva "Modifica" per rimuovere.')),
                                               );
                                               return;
                                             }
-                                            final c =
-                                            context.read<ProfileCubit>();
+                                            final c = context.read<ProfileCubit>();
                                             c.removeSkillToLearn(s);
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
                                                 content: Text('Rimossa: $s'),
                                                 action: SnackBarAction(
                                                   label: 'Annulla',
-                                                  onPressed: () =>
-                                                      c.addSkillToLearn(s),
+                                                  onPressed: () => c.addSkillToLearn(s),
                                                 ),
                                               ),
                                             );
@@ -654,9 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         if (!_isEditing)
                                           const Text(
                                             'Tocca "Modifica" per gestire gli obiettivi.',
-                                            style: TextStyle(
-                                                color: Colors.black54,
-                                                fontSize: 12),
+                                            style: TextStyle(color: Colors.black54, fontSize: 12),
                                           ),
                                       ],
                                     ),
@@ -670,21 +626,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       icon: const Icon(Icons.logout_rounded),
                                       label: const Text(
                                         'Logout',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: TextStyle(fontWeight: FontWeight.w700),
                                       ),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: Colors.white,
                                         foregroundColor: Colors.redAccent,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 32, vertical: 14),
+                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(12),
-                                          side: const BorderSide(
-                                              color: Colors.redAccent,
-                                              width: 1.5),
+                                          borderRadius: BorderRadius.circular(12),
+                                          side: const BorderSide(color: Colors.redAccent, width: 1.5),
                                         ),
                                       ),
                                     ),
@@ -711,7 +661,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final controller = TextEditingController();
     final res = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Aggiungi'),
         content: TextField(
           controller: controller,
@@ -809,238 +759,11 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.w800, color: Colors.black87),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: Colors.black87,
+          ),
         ),
-      ],
-    );
-  }
-}
-
-/// --------------------------
-/// Header responsivo (no overflow)
-/// --------------------------
-class _ProfileHeaderBar extends StatelessWidget {
-  final bool isEditing;
-  final VoidCallback onToggleEdit;
-  final VoidCallback? onSave;
-
-  const _ProfileHeaderBar({
-    required this.isEditing,
-    required this.onToggleEdit,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 420;
-
-        if (!isNarrow) {
-          // Layout ampio: tutto in una riga
-          return Row(
-            children: [
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Profilo',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isEditing) ...[
-                const SizedBox(width: 8),
-                const _EditPill(),
-              ],
-              const SizedBox(width: 8),
-              _SmallTextButton(
-                label: isEditing ? 'Annulla' : 'Modifica',
-                onPressed: onToggleEdit,
-              ),
-              const SizedBox(width: 6),
-              _SmallFilledButton(
-                label: 'Salva',
-                onPressed: onSave,
-              ),
-            ],
-          );
-        }
-
-        // Layout stretto: titolo + pill nella prima riga; bottoni nella seconda
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Profilo',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isEditing) const _EditPill(compact: true),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _SmallTextButton(
-                  label: isEditing ? 'Annulla' : 'Modifica',
-                  onPressed: onToggleEdit,
-                ),
-                const SizedBox(width: 6),
-                _SmallFilledButton(
-                  label: 'Salva',
-                  onPressed: onSave,
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _EditPill extends StatelessWidget {
-  final bool compact;
-  const _EditPill({this.compact = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 4 : 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.38)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.edit, size: 16, color: Colors.white),
-          if (!compact) const SizedBox(width: 6),
-          Text(
-            compact ? 'Modifica' : 'Modifica attiva',
-            style:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SmallTextButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  const _SmallTextButton({required this.label, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        minimumSize: const Size(0, 36),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-    );
-  }
-}
-
-class _SmallFilledButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  const _SmallFilledButton({required this.label, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: Colors.white,
-        disabledBackgroundColor: Colors.white.withOpacity(0.55),
-        foregroundColor: BrandPalette.purple,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: const Size(0, 36),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(label),
-    );
-  }
-}
-
-/// Azioni AppBar fallback per lo stato di errore (usa stessi intenti)
-class _ProfileAppBarActions extends StatelessWidget {
-  final bool isEditing;
-  final bool hasUnsavedChanges;
-  final VoidCallback onEnterEdit;
-  final VoidCallback onCancelEdit;
-  final VoidCallback? onSave;
-
-  const _ProfileAppBarActions({
-    required this.isEditing,
-    required this.hasUnsavedChanges,
-    required this.onEnterEdit,
-    required this.onCancelEdit,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        if (!isEditing)
-          TextButton.icon(
-            onPressed: onEnterEdit,
-            icon: const Icon(Icons.edit, color: Colors.white, size: 18),
-            label: const Text(
-              'Modifica',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          )
-        else ...[
-          TextButton(
-            onPressed: onCancelEdit,
-            child: const Text(
-              'Annulla',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 4),
-          FilledButton(
-            onPressed: hasUnsavedChanges ? onSave : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              disabledBackgroundColor: Colors.white.withOpacity(0.5),
-            ),
-            child: const Text(
-              'Salva',
-              style: TextStyle(
-                color: BrandPalette.purple,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(width: 8),
       ],
     );
   }

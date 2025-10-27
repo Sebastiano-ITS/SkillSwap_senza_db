@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:skillswap/screens/home/profile_info.dart';
 import '../../../models/user_profile.dart';
 import 'profile_card_animator.dart';
 import 'profile_image_gallery.dart';
+import 'profile_info.dart';
 
 class ProfileCard extends StatefulWidget {
   final UserProfile profile;
@@ -38,9 +38,13 @@ class _ProfileCardState extends State<ProfileCard>
   @override
   void initState() {
     super.initState();
-    _animator = ProfileCardAnimator(vsync: this, onUpdate: (value) {
-      if (mounted) setState(() => _offset = value);
-    });
+    _animator = ProfileCardAnimator(
+      vsync: this,
+      onUpdate: (value) {
+        if (!mounted) return; // sicurezza contro update post-dispose
+        setState(() => _offset = value);
+      },
+    );
   }
 
   @override
@@ -65,6 +69,7 @@ class _ProfileCardState extends State<ProfileCard>
   }
 
   void _resetCard() {
+    if (!mounted) return;
     setState(() {
       _overlay = null;
       _offset = Offset.zero;
@@ -89,7 +94,6 @@ class _ProfileCardState extends State<ProfileCard>
           angle: angle,
           child: Stack(
             children: [
-              // --- Card principale ---
               GestureDetector(
                 behavior: HitTestBehavior.deferToChild,
                 onPanStart: widget.isTopCard ? (_) => _animator.stop() : null,
@@ -131,8 +135,6 @@ class _ProfileCardState extends State<ProfileCard>
                   ),
                 ),
               ),
-
-              // --- Overlay colore + icona durante il drag ---
               if (_overlay != null)
                 Positioned.fill(
                   child: AnimatedOpacity(
@@ -147,9 +149,7 @@ class _ProfileCardState extends State<ProfileCard>
                       ),
                       child: Center(
                         child: Icon(
-                          _overlay == 'like'
-                              ? Icons.check_circle
-                              : Icons.cancel,
+                          _overlay == 'like' ? Icons.check_circle : Icons.cancel,
                           size: 100,
                           color: Colors.white,
                         ),
