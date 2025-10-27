@@ -1,6 +1,8 @@
+// lib/profile/profile_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../models/user_profile.dart';
+import '../../models/user_profile.dart';
+
 import '../../screens/profile/profile_repository.dart';
 import 'profile_state.dart';
 
@@ -12,182 +14,163 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRepository _repository;
   String? _userId;
 
+  // ---------- Load ----------
   Future<void> loadProfile(String userId) async {
     _userId = userId;
-    emit(
-      state.copyWith(
-        status: ProfileStatus.loading,
-        clearError: true,
-        clearFeedback: true,
-      ),
-    );
+    emit(state.copyWith(status: ProfileStatus.loading, clearError: true, clearFeedback: true));
 
     try {
       final profile = await _repository.fetchProfile(userId);
       if (profile == null) {
-        emit(
-          state.copyWith(
-            status: ProfileStatus.failure,
-            errorMessage: 'Profilo non trovato.',
-            clearProfile: true,
-            hasUnsavedChanges: false,
-          ),
-        );
-        return;
-      }
-
-      emit(
-        state.copyWith(
-          status: ProfileStatus.loaded,
-          profile: profile,
-          hasUnsavedChanges: false,
-          clearError: true,
-          clearFeedback: true,
-        ),
-      );
-    } catch (_) {
-      emit(
-        state.copyWith(
+        emit(state.copyWith(
           status: ProfileStatus.failure,
-          errorMessage: 'Impossibile caricare il profilo.',
+          errorMessage: 'Profilo non trovato.',
           clearProfile: true,
           hasUnsavedChanges: false,
-        ),
-      );
+        ));
+        return;
+      }
+      emit(state.copyWith(
+        status: ProfileStatus.loaded,
+        profile: profile,
+        hasUnsavedChanges: false,
+        clearError: true,
+        clearFeedback: true,
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: ProfileStatus.failure,
+        errorMessage: 'Impossibile caricare il profilo.',
+        clearProfile: true,
+        hasUnsavedChanges: false,
+      ));
     }
   }
 
+  // ---------- Update base fields ----------
   void updateName(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return;
-    _updateProfileIfChanged((profile) =>
-    trimmed == profile.name ? profile : profile.copyWith(name: trimmed));
+    final t = value.trim();
+    _updateProfileIfChanged((p) => t.isEmpty || t == p.name ? p : p.copyWith(name: t));
   }
 
   void updateEmail(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return;
-    _updateProfileIfChanged((profile) =>
-    trimmed == profile.email ? profile : profile.copyWith(email: trimmed));
+    final t = value.trim();
+    _updateProfileIfChanged((p) => t.isEmpty || t == p.email ? p : p.copyWith(email: t));
   }
 
-  void updateHourlyRate(String value) {
-    final sanitized = value.replaceAll(',', '.');
-    final parsed = double.tryParse(sanitized);
-    if (parsed == null) {
-      return;
-    }
+  void updatePhone(String value) {
+    final t = value.trim();
+    _updateProfileIfChanged(
+          (p) => (t.isEmpty && p.phone == null) || t == (p.phone ?? '') ? p : p.copyWith(phone: t.isEmpty ? null : t),
+    );
   }
 
+  void updateCity(String value) {
+    final t = value.trim();
+    _updateProfileIfChanged(
+          (p) => (t.isEmpty && p.city == null) || t == (p.city ?? '') ? p : p.copyWith(city: t.isEmpty ? null : t),
+    );
+  }
+
+  void updateRadiusKm(double value) {
+    _updateProfileIfChanged((p) => (p.radiusKm ?? 0) == value ? p : p.copyWith(radiusKm: value));
+  }
+
+  void updateBirthDateIso(String? iso) {
+    _updateProfileIfChanged((p) => p.birthDateIso == iso ? p : p.copyWith(birthDateIso: iso));
+  }
+
+  void updateBio(String value) {
+    final t = value.trim();
+    _updateProfileIfChanged(
+          (p) => (t.isEmpty && p.bio == null) || t == (p.bio ?? '') ? p : p.copyWith(bio: t.isEmpty ? null : t),
+    );
+  }
+
+  /// Avatar / immagine profilo
+  void updateImageUrl(String path) {
+    _updateProfileIfChanged((p) => p.imageUrl == path ? p : p.copyWith(imageUrl: path));
+  }
+
+  // ---------- Skills ----------
   void addSkillToTeach(String skill) {
-    final trimmed = skill.trim();
-    if (trimmed.isEmpty) return;
-    _updateProfileIfChanged((profile) {
-      final skills = List<String>.from(profile.canTeach);
-      if (skills.contains(trimmed)) {
-        return profile;
-      }
-      skills.add(trimmed);
-      skills.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-      return profile.copyWith(canTeach: skills);
+    final t = skill.trim();
+    if (t.isEmpty) return;
+    _updateProfileIfChanged((p) {
+      final list = List<String>.from(p.canTeach);
+      if (list.contains(t)) return p;
+      list..add(t)..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      return p.copyWith(canTeach: list);
     });
   }
 
   void removeSkillToTeach(String skill) {
-    _updateProfileIfChanged((profile) {
-      final skills = List<String>.from(profile.canTeach);
-      final removed = skills.remove(skill);
-      if (!removed) {
-        return profile;
-      }
-      return profile.copyWith(canTeach: skills);
+    _updateProfileIfChanged((p) {
+      final list = List<String>.from(p.canTeach);
+      final removed = list.remove(skill);
+      return removed ? p.copyWith(canTeach: list) : p;
     });
   }
 
   void addSkillToLearn(String skill) {
-    final trimmed = skill.trim();
-    if (trimmed.isEmpty) return;
-    _updateProfileIfChanged((profile) {
-      final skills = List<String>.from(profile.wantsToLearn);
-      if (skills.contains(trimmed)) {
-        return profile;
-      }
-      skills.add(trimmed);
-      skills.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-      return profile.copyWith(wantsToLearn: skills);
+    final t = skill.trim();
+    if (t.isEmpty) return;
+    _updateProfileIfChanged((p) {
+      final list = List<String>.from(p.wantsToLearn);
+      if (list.contains(t)) return p;
+      list..add(t)..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      return p.copyWith(wantsToLearn: list);
     });
   }
 
   void removeSkillToLearn(String skill) {
-    _updateProfileIfChanged((profile) {
-      final skills = List<String>.from(profile.wantsToLearn);
-      final removed = skills.remove(skill);
-      if (!removed) {
-        return profile;
-      }
-      return profile.copyWith(wantsToLearn: skills);
+    _updateProfileIfChanged((p) {
+      final list = List<String>.from(p.wantsToLearn);
+      final removed = list.remove(skill);
+      return removed ? p.copyWith(wantsToLearn: list) : p;
     });
   }
 
+  // ---------- Save ----------
   Future<void> saveProfile() async {
     final profile = state.profile;
     final userId = _userId;
-    if (profile == null || userId == null) {
-      return;
-    }
+    if (profile == null || userId == null) return;
 
-    emit(
-      state.copyWith(
-        status: ProfileStatus.saving,
-        clearError: true,
-        clearFeedback: true,
-      ),
-    );
-
+    emit(state.copyWith(status: ProfileStatus.saving, clearError: true, clearFeedback: true));
     try {
       final saved = await _repository.saveProfile(profile);
-      emit(
-        state.copyWith(
-          status: ProfileStatus.loaded,
-          profile: saved,
-          hasUnsavedChanges: false,
-          feedbackMessage: 'Profilo salvato con successo.',
-        ),
-      );
+      emit(state.copyWith(
+        status: ProfileStatus.loaded,
+        profile: saved,
+        hasUnsavedChanges: false,
+        feedbackMessage: 'Profilo salvato con successo.',
+      ));
     } catch (_) {
-      emit(
-        state.copyWith(
-          status: ProfileStatus.failure,
-          errorMessage: 'Errore durante il salvataggio del profilo.',
-        ),
-      );
+      emit(state.copyWith(
+        status: ProfileStatus.failure,
+        errorMessage: 'Errore durante il salvataggio del profilo.',
+      ));
     }
   }
 
   void clearMessages() {
-    if (state.errorMessage == null && state.feedbackMessage == null) {
-      return;
-    }
+    if (state.errorMessage == null && state.feedbackMessage == null) return;
     emit(state.copyWith(clearError: true, clearFeedback: true));
   }
 
+  // ---------- Util ----------
   void _updateProfileIfChanged(UserProfile Function(UserProfile) updater) {
-    final profile = state.profile;
-    if (profile == null) return;
-
-    final updatedProfile = updater(profile);
-    if (identical(updatedProfile, profile)) {
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        status: ProfileStatus.loaded,
-        profile: updatedProfile,
-        hasUnsavedChanges: true,
-        clearError: true,
-        clearFeedback: true,
-      ),
-    );
+    final p = state.profile;
+    if (p == null) return;
+    final updated = updater(p);
+    if (identical(updated, p)) return;
+    emit(state.copyWith(
+      status: ProfileStatus.loaded,
+      profile: updated,
+      hasUnsavedChanges: true,
+      clearError: true,
+      clearFeedback: true,
+    ));
   }
 }

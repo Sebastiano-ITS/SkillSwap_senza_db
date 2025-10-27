@@ -50,11 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
         final UserProfile? me = auth.getCurrentUserProfile();
 
         if (me != null && mounted) {
-          // 👇 Routing aggiornato: prima volta vai all’onboarding
           if (me.onboardingCompleted == true) {
             context.go('/home', extra: me);
           } else {
-            context.go('/onboarding', extra: me.id); // passiamo l'id utente
+            context.go('/onboarding', extra: me.id);
           }
         } else {
           setState(() => _error = 'Impossibile recuperare il profilo utente.');
@@ -113,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // ✅ BACKGROUND PIENO SCHERMO
           Positioned.fill(
             child: Image.asset(
               'assets/images/background_color.png',
@@ -121,7 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.center,
             ),
           ),
-          // Overlay per leggibilità
           Container(color: Colors.white.withOpacity(0.30)),
 
           SafeArea(
@@ -136,12 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Logo
                           Padding(
                             padding: const EdgeInsets.only(top: 6, bottom: 8),
                             child: Image.asset('assets/images/logo_no_bg.png', height: 96),
                           ),
-                          // Titolo
                           ShaderMask(
                             shaderCallback: (rect) => const LinearGradient(
                               colors: [BrandPalette.purple, BrandPalette.magenta, BrandPalette.orange],
@@ -231,14 +226,32 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: _isLogin ? 'Login' : 'Crea account',
                           ),
 
-                          TextButton(
-                            onPressed: _loading
-                                ? null
-                                : () => ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Funzione non disponibile in questa demo.')),
+                          // ✅ VERSIONE SEMPLICE: Viola scuro, sottolineato
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, bottom: 6),
+                            child: TextButton(
+                              onPressed: _loading
+                                  ? null
+                                  : () => ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Funzione non disponibile in questa demo.')),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(50, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: BrandPalette.purple, // colore viola scuro
+                              ),
+                              child: const Text(
+                                'Dimenticata?',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 1.8,
+                                  fontSize: 15,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
                             ),
-                            style: TextButton.styleFrom(foregroundColor: BrandPalette.magenta),
-                            child: const Text('Dimenticata?'),
                           ),
 
                           SizedBox(
@@ -277,7 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Card in stile glassmorphism con blur e trasparenza
 class _GlassCard extends StatelessWidget {
   const _GlassCard({required this.child});
   final Widget child;
@@ -304,7 +316,6 @@ class _GlassCard extends StatelessWidget {
   }
 }
 
-/// Bottone primario con gradiente e animazione di pressione
 class _GradientButton extends StatefulWidget {
   const _GradientButton({
     required this.onPressed,
@@ -357,7 +368,8 @@ class _GradientButtonState extends State<_GradientButton> {
               ),
               child: widget.loading
                   ? const SizedBox(
-                width: 22, height: 22,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.6,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

@@ -27,8 +27,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Naviga dopo 6 secondi
-    _timer = Timer(const Duration(seconds: 6), () {
+
+    _timer = Timer(const Duration(seconds: 4), () {
       if (mounted) context.go('/auth');
     });
   }

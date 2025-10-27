@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../data/local_data.dart';
 import '../../models/user_profile.dart';
 import '../../theme/brand_palette.dart';
+// componenti condivisi (back + dots)
+import '../../widgets/onboarding_ui.dart';
+import '../../widgets/step_dots.dart' hide StepDots;
 
 class OnboardingLearnScreen extends StatefulWidget {
   const OnboardingLearnScreen({super.key, required this.userId});
@@ -16,7 +19,7 @@ class OnboardingLearnScreen extends StatefulWidget {
 }
 
 class _OnboardingLearnScreenState extends State<OnboardingLearnScreen> {
-  // suggerimenti attinenti a SkillSwap (diversi/overlap con teach va benissimo)
+  // suggerimenti attinenti a SkillSwap
   static const List<String> _suggested = [
     'Programmazione',
     'Matematica',
@@ -106,8 +109,7 @@ class _OnboardingLearnScreenState extends State<OnboardingLearnScreen> {
     try {
       await LocalData().saveUser(updated);
       if (!mounted) return;
-      // Fine onboarding (per ora): vai alla home con il profilo aggiornato
-      context.go('/onboarding/ready', extra: updated.id);
+      context.go('/onboarding/media', extra: updated.id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Errore salvataggio: $e')),
@@ -135,6 +137,22 @@ class _OnboardingLearnScreenState extends State<OnboardingLearnScreen> {
           ),
           // Overlay leggibilità
           Container(color: Colors.white.withOpacity(0.30)),
+
+          // ← Back (da step 2 in poi)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: GlassIconButton(
+                  tooltip: 'Indietro',
+                  overrideRoute: '/onboarding/teach',
+                  extra: _user.id,
+                ),
+
+              ),
+            ),
+          ),
 
           SafeArea(
             child: Center(
@@ -229,16 +247,8 @@ class _OnboardingLearnScreenState extends State<OnboardingLearnScreen> {
                         ),
 
                         const SizedBox(height: 16),
-                        // step indicator (3/4 ipotetico)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            _StepDot(active: true),
-                            _StepDot(active: true),
-                            _StepDot(active: true),
-                            _StepDot(),
-                          ],
-                        ),
+                        // ✅ Dots 3/5
+                        const StepDots(current: 3, total: 5),
                       ],
                     ),
                   ),
@@ -321,25 +331,6 @@ class _GlassCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: child,
         ),
-      ),
-    );
-  }
-}
-
-class _StepDot extends StatelessWidget {
-  const _StepDot({this.active = false});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: active ? 32 : 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: active ? BrandPalette.purple : Colors.black.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

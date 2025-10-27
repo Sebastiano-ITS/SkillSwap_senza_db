@@ -25,6 +25,9 @@ import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_detail_screen.dart';
 import '../models/chat.dart';
 
+// ⬇️ NUOVO
+import '../screens/profile/onboarding_media_screen.dart';
+
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
@@ -41,6 +44,19 @@ final GoRouter appRouter = GoRouter(
         }
         return const Scaffold(
           body: Center(child: Text('Utente non fornito per lo step finale.')),
+        );
+      },
+    ),
+    // ⬇️ NUOVO: step media PRIMA della ready
+    GoRoute(
+      path: '/onboarding/media',
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingMediaScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per lo step media.')),
         );
       },
     ),
@@ -68,7 +84,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // Schermate fuori dalla Shell (senza bottom bar)
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthWrapper(),
@@ -84,7 +99,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/onboarding',
       builder: (context, state) {
-        // ci aspettiamo l'userId passato in extra
         final extra = state.extra;
         if (extra is String && extra.isNotEmpty) {
           return OnboardingCreateProfileScreen(userId: extra);
@@ -95,7 +109,7 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // Schermate dentro la Shell (con bottom bar)
+    // Shell con bottom bar
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [

@@ -1,11 +1,9 @@
-// lib/models/user_profile.dart
-
 class UserProfile {
   final String id;
   final String email;
   final String name;
 
-  // Campi opzionali aggiunti per allineamento con onboarding
+  // Campi opzionali allineati all’onboarding
   final int? age;
   final String? birthDateIso;
   final String? phone;
@@ -19,7 +17,11 @@ class UserProfile {
   final double? radiusKm;
 
   final String? bio;
-  final List<String> localImages;
+  final String? imageUrl;
+
+  /// NUOVO: percorsi locali di foto/video scelti in onboarding (max 6 nello step).
+  /// Salviamo i path come stringhe; in futuro potrai migrare ad URL remoti.
+  final List<String>? media;
 
   final List<String> canTeach;
   final List<String> wantsToLearn;
@@ -38,6 +40,8 @@ class UserProfile {
     this.radiusKm,
     this.bio,
     required this.localImages,
+    this.imageUrl,
+    this.media, // <-- opzionale
     required this.canTeach,
     required this.wantsToLearn,
     this.onboardingCompleted = false,
@@ -55,7 +59,8 @@ class UserProfile {
     String? city,
     double? radiusKm,
     String? bio,
-    List<String>? localImages,
+    String? imageUrl,
+    List<String>? media,
     List<String>? canTeach,
     List<String>? wantsToLearn,
     bool? onboardingCompleted,
@@ -72,6 +77,8 @@ class UserProfile {
       city: city ?? this.city,
       radiusKm: radiusKm ?? this.radiusKm,
       bio: bio ?? this.bio,
+      imageUrl: imageUrl ?? this.imageUrl,
+      media: media ?? (this.media == null ? null : List<String>.from(this.media!)),
       localImages: localImages ?? List<String>.from(this.localImages),
       canTeach: canTeach ?? List<String>.from(this.canTeach),
       wantsToLearn: wantsToLearn ?? List<String>.from(this.wantsToLearn),
@@ -98,6 +105,8 @@ class UserProfile {
           ? (json['radiusKm'] as num).toDouble()
           : null,
       bio: json['bio'] as String?,
+      imageUrl: json['imageUrl'] as String?,
+      media: (json['media'] is List) ? List<String>.from(json['media']) : null,
       localImages: _readStringList(json['localImages']),
       canTeach: List<String>.from(json['canTeach'] ?? []),
       wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
@@ -119,6 +128,8 @@ class UserProfile {
       'radiusKm': radiusKm,
       'bio': bio,
       'localImages': localImages,
+      'imageUrl': imageUrl,
+      'media': media, // <-- nuovo campo persistito
       'canTeach': canTeach,
       'wantsToLearn': wantsToLearn,
       'onboardingCompleted': onboardingCompleted,
