@@ -28,7 +28,7 @@ class SwipeLeft extends HomeEvent {
   List<Object?> get props => [profile];
 }
 
-// 👇 NUOVO evento: viene emesso dopo la chiusura del dialog
+// evento: viene emesso dopo la chiusura del dialog
 class DialogClosed extends HomeEvent {
   const DialogClosed();
 }
