@@ -141,34 +141,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _birthCtrl.text = _birthIso ?? '';
   }
 
-  void _toggleEdit(ProfileCubit cubit, ProfileState state) {
+  void _toggleEdit(ProfileCubit cubit, ProfileState state) async {
     if (!_isEditing) {
       setState(() => _isEditing = true);
       return;
     }
-    showDialog<void>(
+
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Annullare le modifiche?'),
-        content: const Text('Le modifiche non salvate andranno perse.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continua a modificare'),
+      barrierDismissible: false,
+      builder: (ctx) {
+        final tt = Theme.of(ctx).textTheme;
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          titleTextStyle: tt.titleLarge?.copyWith(
+            color: Colors.black87,
+            fontWeight: FontWeight.w800,
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (!mounted) return;
-              setState(() => _isEditing = false);
-              cubit.loadProfile(widget.userId); // scarta modifiche
-            },
-            child: const Text('Annulla modifiche'),
+          contentTextStyle: tt.bodyMedium?.copyWith(
+            color: Colors.black87,
+            height: 1.35,
           ),
-        ],
-      ),
+          title: const Text('Annullare le modifiche?'),
+          content: const Text('Le modifiche non salvate andranno perse.'),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(
+                foregroundColor: BrandPalette.purple,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              child: const Text('Continua a modificare'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                setState(() => _isEditing = false);
+                cubit.loadProfile(widget.userId); // scarta modifiche
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: BrandPalette.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Annulla modifiche'),
+            ),
+          ],
+        );
+      },
     );
   }
+
 
   void _save(ProfileCubit cubit) {
     cubit.saveProfile().then((_) {
@@ -659,30 +687,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _addSkillDialog({required ValueChanged<String> onConfirm}) async {
     if (!_isEditing) return;
     final controller = TextEditingController();
+
     final res = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Aggiungi'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text(
+          'Aggiungi competenza',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
           textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
+          cursorColor: BrandPalette.purple,
+          style: const TextStyle(
+            color: Colors.black87, // <-- testo leggibile
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
             hintText: 'Es. Flutter, Chitarra, Cucina giapponese…',
+            hintStyle: const TextStyle(color: Colors.black45),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: BrandPalette.purple, width: 1.5),
+              borderRadius: BorderRadius.all(Radius.circular(14)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+            ),
+            filled: true,
+            fillColor: Colors.white,
           ),
           onSubmitted: (_) => Navigator.of(context).pop(controller.text.trim()),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Aggiungi')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: BrandPalette.magenta),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            style: FilledButton.styleFrom(
+              backgroundColor: BrandPalette.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Aggiungi',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
+
     if (res == null) return;
     final s = _normalize(res);
     if (s.isEmpty) return;
     onConfirm(s);
   }
+
 
   String _normalize(String s) {
     final t = s.trim();

@@ -2,14 +2,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../models/explore_category.dart';
-import '../../models/user_profile.dart'; // <-- 1. Importa il modello UserProfile
-import 'package:go_router/go_router.dart'; // Importa go_router
 
+import '../../models/explore_category.dart';
+import '../../models/user_profile.dart';
 
 class ExploreScreen extends StatefulWidget {
-  // 2. Aggiungi il profilo utente come parametro richiesto
   final UserProfile currentUserProfile;
   const ExploreScreen({super.key, required this.currentUserProfile});
 
@@ -19,7 +18,7 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   List<InterestCategory> _categories = [];
-  // Rimuoviamo _myInterests, non ci serve più
+  List<String> _suggestedInterests = []; // fallback se il profilo non ne ha
   bool _isLoading = true;
 
   @override
@@ -28,122 +27,229 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _loadExploreData();
   }
 
-  // Funzione per caricare e parsare i dati dal file JSON
   Future<void> _loadExploreData() async {
     try {
-      final String response = await rootBundle.loadString('assets/data/explore_data.json');
-      final data = await json.decode(response);
+      final String response =
+      await rootBundle.loadString('assets/data/explore_data.json');
+      final data = json.decode(response);
+
+      final categories = (data['interest_categories'] as List)
+          .map((item) => InterestCategory.fromJson(item))
+          .toList();
+
+      // Proviamo a leggere eventuali suggerimenti dal JSON
+      final fallback = (data['default_interests'] as List?)
+          ?.map((e) => e.toString())
+          .toList() ??
+          // Se il file non li ha, usiamo un minimo di default
+          <String>['Fotografia', 'Inglese', 'Programmazione', 'Chitarra'];
 
       setState(() {
-        _categories = (data['interest_categories'] as List)
-            .map((item) => InterestCategory.fromJson(item))
-            .toList();
-        // Non carichiamo più 'my_interests' da qui
+        _categories = categories;
+        _suggestedInterests = fallback;
         _isLoading = false;
       });
     } catch (e) {
-      print("Errore nel caricamento di explore_data.json: $e");
+      // In caso di errore, mettiamo almeno delle card di default
       setState(() {
+        _categories = [
+          InterestCategory(
+            title: 'Appassionati di Fotografia',
+            description: 'Trova chi condivide la tua passione.',
+            icon: 'fotografia',
+            gradient: const [
+              Color(0xFFFFC08A),
+              Color(0xFFFF9A76),
+            ],
+          ),
+          InterestCategory(
+            title: 'Amanti delle Lingue',
+            description: 'Connettiti con chi parla nuove lingue.',
+            icon: 'lingue',
+            gradient: const [
+              Color(0xFF8DB3FF),
+              Color(0xFFDA7BBE),
+            ],
+          ),
+        ];
+        _suggestedInterests = ['Fotografia', 'Inglese', 'Programmazione'];
         _isLoading = false;
       });
     }
   }
 
-  // Funzione helper per ottenere l'icona corretta in base alla stringa
   IconData _getIcon(String iconName) {
-    // Convertiamo il nome dell'interesse in minuscolo per un matching più robusto
-    String lowerCaseIconName = iconName.toLowerCase();
-    switch (lowerCaseIconName) {
-      case 'fotografia': return LucideIcons.camera;
-      case 'lingue': return LucideIcons.languages;
-      case 'musica': return LucideIcons.music;
-      case 'cucina': return LucideIcons.chefHat;
-      case 'programmazione': return LucideIcons.code2;
-      case 'viaggiare': return LucideIcons.plane;
-      case 'spagnolo': return LucideIcons.languages;
-      case 'inglese': return LucideIcons.languages;
-      case 'francese': return LucideIcons.languages;
-    // Aggiungi altre associazioni se necessario
-      default: return LucideIcons.star; // Icona di default
+    switch (iconName.toLowerCase()) {
+      case 'fotografia':
+        return LucideIcons.camera;
+      case 'lingue':
+      case 'inglese':
+      case 'francese':
+      case 'spagnolo':
+        return LucideIcons.languages;
+      case 'musica':
+        return LucideIcons.music;
+      case 'cucina':
+        return LucideIcons.chefHat;
+      case 'programmazione':
+        return LucideIcons.code2;
+      case 'viaggiare':
+        return LucideIcons.plane;
+      default:
+        return LucideIcons.star;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 3. Accedi alla lista wantsToLearn direttamente dal profilo dell'utente
-    final List<String> myInterests = widget.currentUserProfile.wantsToLearn;
+    // Interessi dal profilo
+    final myInterests = widget.currentUserProfile.wantsToLearn
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
 
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFB200), Color(0xFFEB5B00), Color(0xFFD91656), Color(0xFF640D5F)],
+            colors: [
+              Color(0xFFFFB200),
+              Color(0xFFEB5B00),
+              Color(0xFFD91656),
+              Color(0xFF640D5F)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            ? const SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+        )
             : SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Esplora',
-                  style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [Shadow(blurRadius: 5.0, color: Colors.black26, offset: Offset(0, 2))]
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-                ),
-                const SizedBox(height: 24),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Esplora',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 5.0,
+                                color: Colors.black26,
+                                offset: Offset(0, 2),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
 
-                // Sezione 1: Card per Categorie di Interessi (invariata)
-                const Text(
-                  'Trova la tua community',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 16),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.8,
-                  ),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) => _buildCategoryCard(_categories[index]),
-                ),
-                const SizedBox(height: 32),
+                        // Sezione 1 — categorie
+                        const Text(
+                          'Trova la tua community',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.82,
+                          ),
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) =>
+                              _buildCategoryCard(_categories[index]),
+                        ),
+                        const SizedBox(height: 28),
 
-                // --- Sezione 2: Card per i Tuoi Interessi (MODIFICATA) ---
-                if (myInterests.isNotEmpty) ...[
-                  const Text(
-                    'Basato su cosa vuoi imparare',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      // 4. Usa la lunghezza della lista di interessi dell'utente
-                      itemCount: myInterests.length,
-                      itemBuilder: (context, index) {
-                        // 5. Prendi l'interesse dalla lista dell'utente
-                        final interestName = myInterests[index];
-                        return _buildMyInterestCard(interestName);
-                      },
+                        // Sezione 2 — interessi del profilo o fallback
+                        Text(
+                          myInterests.isNotEmpty
+                              ? 'Basato su cosa vuoi imparare'
+                              : 'Suggeriti per te',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (myInterests.isNotEmpty)
+                          SizedBox(
+                            height: 120,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: myInterests.length,
+                              itemBuilder: (context, index) {
+                                final interestName = myInterests[index];
+                                return _buildMyInterestCard(interestName);
+                              },
+                            ),
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: 120,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _suggestedInterests.length,
+                                  itemBuilder: (context, index) {
+                                    final name =
+                                    _suggestedInterests[index];
+                                    return _buildMyInterestCard(name);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton.icon(
+                                onPressed: () => context.go('/profile'),
+                                icon: const Icon(
+                                  LucideIcons.plusCircle,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Aggiungi interessi dal profilo',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        // Evita “barra nera” aggiungendo spazio extra
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
+                      ],
                     ),
                   ),
-                ],
-              ],
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -151,16 +257,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildCategoryCard(InterestCategory category) {
-
-    // Associamo il titolo della card alla skill effettiva (es. "Appassionati di Fotografia" -> "Fotografia")
+    // es. "Appassionati di Fotografia" -> "Fotografia"
     final skillToSearch = category.title.split(' ').last;
 
-    // ... questo widget rimane invariato ...
     return GestureDetector(
-      onTap: () {
-        // Naviga alla nuova schermata passando la skill come parametro nella URL
-        context.push('/explore/users_by_skill/$skillToSearch');
-      },
+      onTap: () => context.push('/explore/users_by_skill/$skillToSearch'),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -169,7 +270,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            )
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -181,12 +288,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
               const Spacer(),
               Text(
                 category.title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 category.description,
-                style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.9),
+                ),
               ),
             ],
           ),
@@ -195,32 +309,42 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // 6. Modifica questo widget per accettare una semplice stringa
   Widget _buildMyInterestCard(String interestName) {
     return Container(
-      width: 100,
+      width: 120,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.25),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5)
+        color: Colors.white.withOpacity(0.20),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.35), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          )
+        ],
       ),
       child: InkWell(
-        onTap: () {
-          // Usa context.push per navigare alla lista di utenti che possono insegnare questo interesse.
-          // Il comportamento è ora identico a quello delle card delle categorie.
-          context.push('/explore/users_by_skill/$interestName');
-        },
+        onTap: () => context.push('/explore/users_by_skill/$interestName'),
         borderRadius: BorderRadius.circular(15),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(_getIcon(interestName), color: Colors.white, size: 30),
+            Icon(_getIcon(interestName), color: Colors.white, size: 28),
             const SizedBox(height: 8),
-            Text(
-              interestName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                interestName,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),
