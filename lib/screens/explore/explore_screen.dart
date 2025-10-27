@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../models/explore_category.dart';
 import '../../models/user_profile.dart'; // <-- 1. Importa il modello UserProfile
-import 'package:go_router/go_router.dart'; // Importa go_router
+import 'package:go_router/go_router.dart';
+
+import '../../theme/brand_palette.dart'; // Importa go_router
 
 
 class ExploreScreen extends StatefulWidget {
@@ -77,7 +79,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFB200), Color(0xFFEB5B00), Color(0xFFD91656), Color(0xFF640D5F)],
+            colors: [BrandPalette.amber, BrandPalette.orange, BrandPalette.magenta, BrandPalette.purple],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

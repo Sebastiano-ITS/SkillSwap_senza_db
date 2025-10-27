@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/chat.dart';
+import '../../theme/brand_palette.dart'; // <-- usa i colori brand
 
 class ChatDetailScreen extends StatefulWidget {
   final Chat chat;
-
   const ChatDetailScreen({super.key, required this.chat});
 
   @override
@@ -17,11 +17,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
-    messages = List.from(widget.chat.messages); // Copia per modifiche locali
+    messages = List.from(widget.chat.messages);
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -31,38 +34,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.chat.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                const Text('Online', style: TextStyle(fontSize: 12, color: Colors.green)),
+                Text(widget.chat.name, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Online', style: tt.labelSmall?.copyWith(color: BrandPalette.amber)),
               ],
             ),
           ],
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
+        // niente background/elevation: eredita AppBarTheme
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: messages.length,
               itemBuilder: (context, index) {
-                final message = messages[index];
+                final m = messages[index];
+                final bubbleColor = m.isMe ? cs.primary : cs.surface;
+                final textColor = m.isMe ? cs.onPrimary : cs.onSurface;
+
                 return Align(
-                  alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: m.isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: message.isMe ? Colors.blue : Colors.grey[200],
+                      color: bubbleColor,
                       borderRadius: BorderRadius.circular(20),
+                      border: m.isMe ? null : Border.all(color: const Color(0xFFE6E6EA)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(message.text, style: TextStyle(color: message.isMe ? Colors.white : Colors.black)),
+                        Text(m.text, style: tt.bodyMedium?.copyWith(color: textColor)),
                         const SizedBox(height: 4),
-                        Text(message.time, style: TextStyle(fontSize: 10, color: message.isMe ? Colors.white70 : Colors.grey)),
+                        Text(
+                          m.time,
+                          style: tt.labelSmall?.copyWith(
+                            color: m.isMe ? Colors.white70 : Colors.black45,
+                            fontSize: 10,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -72,33 +84,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.grey[100], border: Border(top: BorderSide(color: Colors.grey[300]!))),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              border: const Border(top: BorderSide(color: Color(0xFFE6E6EA))),
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Scrivi un messaggio...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(25))),
                       filled: true,
-                      fillColor: Colors.white,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.send, color: Colors.blue),
+                  icon: const Icon(Icons.send),
+                  color: BrandPalette.purple,
                   onPressed: () {
                     if (_controller.text.isNotEmpty) {
-                      final newMessage = Message(
-                        isMe: true,
-                        text: _controller.text,
-                        time: "Ora", // Placeholder; usa DateTime per real-time
-                      );
-                      setState(() {
-                        messages.add(newMessage);
-                      });
+                      final msg = Message(isMe: true, text: _controller.text, time: "Ora");
+                      setState(() => messages.add(msg));
                       _controller.clear();
                     }
                   },

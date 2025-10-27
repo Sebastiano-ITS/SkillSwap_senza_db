@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../../models/user_profile.dart';
 import '../../services/local_data_service_explore.dart';
+import '../../theme/brand_palette.dart';
 
 class UserListScreen extends StatefulWidget {
   final String skill;
@@ -16,7 +17,6 @@ class UserListScreen extends StatefulWidget {
 class _UserListScreenState extends State<UserListScreen> {
   late Future<List<UserProfile>> _filteredUsersFuture;
   final PageController _pageController = PageController();
-  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -33,53 +33,37 @@ class _UserListScreenState extends State<UserListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: Stack(
         children: [
           FutureBuilder<List<UserProfile>>(
             future: _filteredUsersFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+            builder: (context, s) {
+              if (s.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (snapshot.hasError) {
-                return Center(child: Text('Errore: ${snapshot.error}'));
-              }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _buildEmptyState();
-              }
+              if (s.hasError) return Center(child: Text('Errore: ${s.error}'));
+              if (!s.hasData || s.data!.isEmpty) return _buildEmptyState();
 
-              final users = snapshot.data!;
+              final users = s.data!;
               return PageView.builder(
                 controller: _pageController,
                 itemCount: users.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  // Usiamo il nostro nuovo widget Stateful per ogni card
-                  return UserProfileCard(user: users[index]);
-                },
+                itemBuilder: (_, i) => UserProfileCard(user: users[i]),
               );
             },
           ),
-          // Pulsante Indietro sovrapposto
           Positioned(
             top: 50,
             left: 20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: cs.surface.withOpacity(.6), shape: BoxShape.circle),
               child: IconButton(
-                icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
-                onPressed: () {
-                  // Usa go_router per tornare indietro
-                  context.pop();
-                },
+                icon: const Icon(LucideIcons.arrowLeft),
+                color: cs.onSurface,
+                onPressed: () => context.pop(),
               ),
             ),
           ),
@@ -88,25 +72,22 @@ class _UserListScreenState extends State<UserListScreen> {
     );
   }
 
-  // Widget per quando non ci sono utenti
   Widget _buildEmptyState() {
+    final tt = Theme.of(context).textTheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(LucideIcons.users, size: 80, color: Colors.grey.shade400),
             const SizedBox(height: 20),
-            Text(
-              'Nessun esperto trovato',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
-            ),
+            Text('Nessun esperto trovato', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Text(
-              'Nessun utente al momento può insegnare "${widget.skill}". Prova a cercare un\'altra competenza!',
+              'Nessun utente al momento può insegnare "${widget.skill}". Prova un\'altra competenza!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              style: tt.bodyMedium?.copyWith(color: Colors.black54),
             ),
           ],
         ),
@@ -114,9 +95,6 @@ class _UserListScreenState extends State<UserListScreen> {
     );
   }
 }
-
-// --- WIDGET STATEFUL PER LA CARD DEL PROFILO ---
-// Isola la logica di espansione della bio per ogni card
 
 class UserProfileCard extends StatefulWidget {
   final UserProfile user;
@@ -127,40 +105,41 @@ class UserProfileCard extends StatefulWidget {
 }
 
 class _UserProfileCardState extends State<UserProfileCard> {
-  // Stato per gestire l'espansione della bio, specifico per questa card
   bool _isBioExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-    final bool hasImage = user.media?.isNotEmpty ?? false && user.media!.first.startsWith('http');
-    final bool hasBio = user.bio != null && user.bio!.isNotEmpty;
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    final hasImage = (user.media?.isNotEmpty ?? false) && user.media!.first.startsWith('http');
+    final hasBio = (user.bio ?? '').isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.all(20.0),
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        color: hasImage ? Colors.grey : Colors.indigo.shade400,
+        color: hasImage ? Colors.grey : BrandPalette.purple,
         image: hasImage ? DecorationImage(image: NetworkImage(user.media!.first), fit: BoxFit.cover) : null,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2),
+          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 20, spreadRadius: 2),
         ],
       ),
       child: Stack(
         children: [
-          // Gradiente per la leggibilità del testo
+          // gradient per leggibilità
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(25),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-                stops: const [0.5, 1.0],
+                colors: [Colors.transparent, Colors.black.withOpacity(0.85)],
+                stops: const [0.5, 1],
               ),
             ),
           ),
-          // Avatar di fallback se non c'è immagine
           if (!hasImage)
             Center(
               child: CircleAvatar(
@@ -168,23 +147,19 @@ class _UserProfileCardState extends State<UserProfileCard> {
                 backgroundColor: Colors.white.withOpacity(0.15),
                 child: Text(
                   user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                  style: const TextStyle(fontSize: 80, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: tt.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-          // Contenuto testuale sovrapposto
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${user.name}, ${user.age ?? ''}',
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2, color: Colors.black54)]),
-                ),
+                Text('${user.name}, ${user.age ?? ''}',
+                    style: tt.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, shadows: const [Shadow(blurRadius: 2, color: Colors.black54)])),
                 const SizedBox(height: 8),
-                // Logica "Leggi altro" per la bio
                 if (hasBio)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,27 +168,15 @@ class _UserProfileCardState extends State<UserProfileCard> {
                         user.bio!,
                         maxLines: _isBioExpanded ? 100 : 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 16, color: Colors.white),
+                        style: tt.bodyMedium?.copyWith(color: Colors.white),
                       ),
-                      // Mostra il pulsante solo se la bio è potenzialmente lunga
                       if (user.bio!.length > 100)
                         GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isBioExpanded = !_isBioExpanded;
-                            });
-                          },
+                          onTap: () => setState(() => _isBioExpanded = !_isBioExpanded),
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              _isBioExpanded ? 'Mostra meno' : '...leggi altro',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white,
-                              ),
-                            ),
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(_isBioExpanded ? 'Mostra meno' : '...leggi altro',
+                                style: tt.labelLarge?.copyWith(color: Colors.white, decoration: TextDecoration.underline)),
                           ),
                         ),
                     ],
@@ -221,9 +184,9 @@ class _UserProfileCardState extends State<UserProfileCard> {
                 const SizedBox(height: 16),
                 const Divider(color: Colors.white54),
                 const SizedBox(height: 16),
-                _buildSkillsRow('Sa insegnare', user.canTeach, LucideIcons.zap, Colors.yellow.shade600),
+                _buildSkillsRow(context, 'Sa insegnare', user.canTeach, LucideIcons.zap, BrandPalette.amber),
                 const SizedBox(height: 12),
-                _buildSkillsRow('Vuole imparare', user.wantsToLearn, LucideIcons.bookOpen, Colors.lightBlue.shade300),
+                _buildSkillsRow(context, 'Vuole imparare', user.wantsToLearn, LucideIcons.bookOpen, BrandPalette.magenta),
               ],
             ),
           ),
@@ -232,27 +195,28 @@ class _UserProfileCardState extends State<UserProfileCard> {
     );
   }
 
-  // Widget helper per mostrare le competenze
-  Widget _buildSkillsRow(String title, List<String> skills, IconData icon, Color iconColor) {
+  Widget _buildSkillsRow(BuildContext context, String title, List<String> skills, IconData icon, Color iconColor) {
+    final tt = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(title, style: tt.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         if (skills.isNotEmpty)
           Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
-            children: skills.map((skill) => Chip(
+            spacing: 8,
+            runSpacing: 6,
+            children: skills
+                .map((s) => Chip(
               avatar: Icon(icon, color: iconColor, size: 16),
-              label: Text(skill),
-              backgroundColor: Colors.white.withOpacity(0.2),
-              labelStyle: const TextStyle(color: Colors.black),
-              side: BorderSide.none,
-            )).toList(),
+              label: Text(s),
+              // lascia ChipTheme governare il resto (niente bg/labelStyle hardcoded)
+            ))
+                .toList(),
           )
         else
-          Text('Nessuna competenza specificata', style: TextStyle(color: Colors.white.withOpacity(0.7), fontStyle: FontStyle.italic)),
+          Text('Nessuna competenza specificata', style: tt.bodySmall?.copyWith(color: Colors.white70, fontStyle: FontStyle.italic)),
       ],
     );
   }
