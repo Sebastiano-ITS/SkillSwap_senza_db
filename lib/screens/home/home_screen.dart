@@ -11,6 +11,7 @@ import '../../flutter_bloc/home_bloc/home_state.dart';
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../services/match_services.dart';
+import '../../theme/brand_palette.dart';
 
 class HomeScreen extends StatelessWidget {
   final UserProfile currentUserProfile;
@@ -53,6 +54,7 @@ class _HomeViewState extends State<_HomeView> {
       builder: (dialogContext) => AlertDialog(
         title: const Text("🎉 Match trovato!"),
         content: Text("Hai fatto match con ${matchedUser.name}!"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -71,55 +73,85 @@ class _HomeViewState extends State<_HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F9),
-      body: SafeArea(
-        child: BlocConsumer<HomeBloc, HomeState>(
-          listener: (context, state) {
-            if (state is ProfileMatched) {
-              _safeShowMatchDialog(state.profile);
-              HapticFeedback.mediumImpact();
-            } else if (state is HomeError) {
-              HapticFeedback.selectionClick();
-            }
-          },
-          builder: (context, state) {
-            if (state is HomeError) {
-              return Center(child: Text(state.message));
-            }
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text('SkillSwap', style: tt.titleLarge?.copyWith(color: Colors.white)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              BrandPalette.amber,
+              BrandPalette.orange,
+              BrandPalette.magenta,
+              BrandPalette.purple
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: BlocConsumer<HomeBloc, HomeState>(
+            listener: (context, state) {
+              if (state is ProfileMatched) {
+                _safeShowMatchDialog(state.profile);
+                HapticFeedback.mediumImpact();
+              } else if (state is HomeError) {
+                HapticFeedback.selectionClick();
+              }
+            },
+            builder: (context, state) {
+              if (state is HomeError) {
+                return Center(
+                  child: Text(
+                    state.message,
+                    style: tt.titleMedium?.copyWith(color: Colors.white),
+                  ),
+                );
+              }
 
-            if (state is! HomeLoaded) {
-              return const Center(child: CircularProgressIndicator());
-            }
+              if (state is! HomeLoaded) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
 
-            final profiles = state.profiles
-                .where((p) => p.id != widget.currentUserProfile.id)
-                .toList();
+              final profiles = state.profiles
+                  .where((p) => p.id != widget.currentUserProfile.id)
+                  .toList();
 
-            if (profiles.isEmpty) {
-              return const Center(child: Text('Nessun profilo disponibile'));
-            }
+              if (profiles.isEmpty) {
+                return Center(
+                  child: Text(
+                    'Nessun profilo disponibile',
+                    style: tt.titleMedium?.copyWith(color: Colors.white),
+                  ),
+                );
+              }
 
-            return Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  for (int i = 0; i < profiles.length; i++)
-                    ProfileCard(
-                      profile: profiles[i],
-                      isTopCard: i == profiles.length - 1,
-                      onSwipeRight: (p) =>
-                          context.read<HomeBloc>().add(SwipeRight(p)),
-                      onSwipeLeft: (p) =>
-                          context.read<HomeBloc>().add(SwipeLeft(p)),
-                    ),
-
-                  // Overlay post-swipe controllato dal bloc
-                  const SwipeOverlay(),
-                ],
-              ),
-            );
-          },
+              return Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    for (int i = 0; i < profiles.length; i++)
+                      ProfileCard(
+                        profile: profiles[i],
+                        isTopCard: i == profiles.length - 1,
+                        onSwipeRight: (p) =>
+                            context.read<HomeBloc>().add(SwipeRight(p)),
+                        onSwipeLeft: (p) =>
+                            context.read<HomeBloc>().add(SwipeLeft(p)),
+                      ),
+                    const SwipeOverlay(),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

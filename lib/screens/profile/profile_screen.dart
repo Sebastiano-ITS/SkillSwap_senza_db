@@ -60,14 +60,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final String targetPath = '${dir.path}/${user.id}.$ext';
     await File(file.path).copy(targetPath);
 
-    // aggiorna il cubit (se presente il metodo)
     try {
       cubit.updateImageUrl(targetPath);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Immagine salvata localmente. Aggiungi updateImageUrl() nel Cubit per salvarla sul profilo.'),
+            content: Text(
+              'Immagine salvata localmente. Aggiungi updateImageUrl() nel Cubit per salvarla sul profilo.',
+            ),
           ),
         );
       }
@@ -88,25 +89,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       firstDate: first,
       lastDate: last,
       helpText: 'Seleziona data di nascita',
+      confirmText: 'Conferma',
+      cancelText: 'Annulla',
     );
     if (picked != null) {
       _birthIso = picked.toIso8601String().substring(0, 10);
       try {
         cubit.updateBirthDateIso(_birthIso);
-      } catch (_) {/* opzionale */}
+      } catch (_) {}
       setState(() {});
     }
   }
 
-  InputDecoration _decor(String label) {
+  InputDecoration _decor(String label, {String? hint}) {
+    // TextField sempre leggibili (testo scuro) su card glass
     return InputDecoration(
       labelText: label,
+      hintText: hint,
+      labelStyle:
+      const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+      hintStyle: const TextStyle(color: Colors.black45),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.92),
+      fillColor: Colors.white.withOpacity(0.96),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.4)),
+        borderSide: BorderSide(color: Colors.black12.withOpacity(0.15)),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
@@ -150,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               Navigator.pop(context);
               setState(() => _isEditing = false);
-              cubit.loadProfile(widget.userId); // scarta modifiche
+              cubit.loadProfile(widget.userId);
             },
             child: const Text('Annulla modifiche'),
           ),
@@ -192,9 +200,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               body: Center(child: CircularProgressIndicator()),
             );
           }
+
           if (state.status == ProfileStatus.failure || state.profile == null) {
             return Scaffold(
-              appBar: AppBar(title: const Text('Profilo')),
+              appBar: AppBar(
+                title: const Text('Profilo'),
+                centerTitle: false,
+                backgroundColor: BrandPalette.purple,
+                elevation: 0,
+                actions: [
+                  _ProfileAppBarActions(
+                    isEditing: _isEditing,
+                    hasUnsavedChanges: state.hasUnsavedChanges,
+                    onEnterEdit: () => setState(() => _isEditing = true),
+                    onCancelEdit: () => _toggleEdit(cubit, state),
+                    onSave: state.hasUnsavedChanges ? () => _save(cubit) : null,
+                  ),
+                ],
+              ),
               body: Center(
                 child: Text(state.errorMessage ?? 'Errore sconosciuto'),
               ),
@@ -206,396 +229,473 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final theme = Theme.of(context);
 
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Profilo'),
-              centerTitle: false,
-              backgroundColor: BrandPalette.purple,
-              elevation: 0,
-              actions: [
-
-                const SizedBox(width: 4),
-                if (!_isEditing)
-                  TextButton.icon(
-                    onPressed: () => setState(() => _isEditing = true),
-                    icon: const Icon(Icons.edit, color: Colors.white, size: 18),
-                    label: const Text(
-                      'Modifica',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                  )
-                else ...[
-                  TextButton(
-                    onPressed: () => _toggleEdit(cubit, state),
-                    child: const Text(
-                      'Annulla',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  FilledButton(
-                    onPressed: state.hasUnsavedChanges ? () => _save(cubit) : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.white.withOpacity(0.5),
-                    ),
-                    child: Text(
-                      'Salva',
-                      style: TextStyle(
-                        color: BrandPalette.purple,
-                        fontWeight: FontWeight.w700,
+            body: Stack(
+              children: [
+                // background brand
+                Positioned.fill(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          BrandPalette.amber,
+                          BrandPalette.orange,
+                          BrandPalette.magenta,
+                          BrandPalette.purple
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
                   ),
-                ],
-                const SizedBox(width: 8),
-              ],
-            ),
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/background_color.png',
-                    fit: BoxFit.cover,
-                  ),
                 ),
-                Container(color: Colors.white.withOpacity(0.25)),
+                // overlay per leggibilità
+                Positioned.fill(
+                  child: Container(color: Colors.white.withOpacity(0.15)),
+                ),
 
                 SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 820),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Header: avatar + nome/email
-                            Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Stack(
+                  child: Column(
+                    children: [
+                      // AppBar custom responsiva (niente overflow)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                        child: _ProfileHeaderBar(
+                          isEditing: _isEditing,
+                          onToggleEdit: () => _toggleEdit(cubit, state),
+                          onSave: (_isEditing && state.hasUnsavedChanges)
+                              ? () => _save(cubit)
+                              : null,
+                        ),
+                      ),
+
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          physics: const BouncingScrollPhysics(),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 820),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Header
+                                  _GlassCard(
+                                    child: Row(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                       children: [
-                                        _Avatar(imagePath: u.imageUrl),
-                                        if (_isEditing)
-                                          Positioned(
-                                            right: 0,
-                                            bottom: 0,
-                                            child: InkWell(
-                                              onTap: () => _pickAvatar(u, cubit),
-                                              borderRadius: BorderRadius.circular(20),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.edit,
-                                                  size: 16,
-                                                  color: BrandPalette.purple,
+                                        Stack(
+                                          children: [
+                                            _Avatar(imagePath: u.imageUrl),
+                                            if (_isEditing)
+                                              Positioned(
+                                                right: 0,
+                                                bottom: 0,
+                                                child: InkWell(
+                                                  onTap: () =>
+                                                      _pickAvatar(u, cubit),
+                                                  borderRadius:
+                                                  BorderRadius.circular(20),
+                                                  child: Container(
+                                                    padding:
+                                                    const EdgeInsets.all(6),
+                                                    decoration:
+                                                    const BoxDecoration(
+                                                      color: Colors.white,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.edit,
+                                                      size: 16,
+                                                      color:
+                                                      BrandPalette.purple,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          TextField(
-                                            controller: _nameCtrl,
-                                            readOnly: !_isEditing,
-                                            decoration: _decor('Nome'),
-                                            onChanged: (v) => cubit.updateName(v),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          TextField(
-                                            controller: _emailCtrl,
-                                            readOnly: !_isEditing,
-                                            keyboardType: TextInputType.emailAddress,
-                                            decoration: _decor('Email'),
-                                            onChanged: (v) => cubit.updateEmail(v),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Info base (i campi extra sono collegati ai metodi del Cubit se presenti)
-                            Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const _SectionTitle(
-                                      icon: Icons.badge_outlined,
-                                      title: 'Informazioni di base',
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextField(
-                                            controller: _phoneCtrl,
-                                            readOnly: !_isEditing,
-                                            keyboardType: TextInputType.phone,
-                                            decoration: _decor('Cellulare'),
-                                            onChanged: (v) {
-                                              if (_isEditing) {
-                                                try { cubit.updatePhone(v); } catch (_) {}
-                                              }
-                                            },
-                                          ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: GestureDetector(
-                                            onTap: _isEditing ? () => _pickBirthDate(cubit) : null,
-                                            child: AbsorbPointer(
-                                              absorbing: true,
-                                              child: TextField(
-                                                decoration: _decor('Data di nascita'),
-                                                controller: TextEditingController(text: _birthIso ?? ''),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextField(
-                                            controller: _cityCtrl,
-                                            readOnly: !_isEditing,
-                                            decoration: _decor('Città'),
-                                            onChanged: (v) {
-                                              if (_isEditing) {
-                                                try { cubit.updateCity(v); } catch (_) {}
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 16),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                'Raggio (km): ${_radiusKm.round()}',
-                                                style: theme.textTheme.labelLarge,
+                                              TextField(
+                                                controller: _nameCtrl,
+                                                readOnly: !_isEditing,
+                                                style: const TextStyle(
+                                                    color: Colors.black87),
+                                                cursorColor:
+                                                BrandPalette.purple,
+                                                decoration: _decor('Nome'),
+                                                onChanged: (v) =>
+                                                    cubit.updateName(v),
                                               ),
-                                              Slider(
-                                                value: _radiusKm,
-                                                min: 1,
-                                                max: 50,
-                                                divisions: 49,
-                                                activeColor: BrandPalette.magenta,
-                                                thumbColor: BrandPalette.orange,
-                                                label: '${_radiusKm.round()}',
-                                                onChanged: _isEditing
-                                                    ? (v) {
-                                                  setState(() => _radiusKm = v);
-                                                  try { cubit.updateRadiusKm(v); } catch (_) {}
-                                                }
-                                                    : null,
+                                              const SizedBox(height: 10),
+                                              TextField(
+                                                controller: _emailCtrl,
+                                                readOnly: !_isEditing,
+                                                keyboardType:
+                                                TextInputType.emailAddress,
+                                                style: const TextStyle(
+                                                    color: Colors.black87),
+                                                cursorColor:
+                                                BrandPalette.purple,
+                                                decoration: _decor('Email'),
+                                                onChanged: (v) =>
+                                                    cubit.updateEmail(v),
                                               ),
                                             ],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Bio
-                            Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const _SectionTitle(icon: Icons.notes, title: 'Bio'),
-                                    const SizedBox(height: 8),
-                                    TextField(
-                                      controller: _bioCtrl,
-                                      readOnly: !_isEditing,
-                                      maxLines: 5,
-                                      minLines: 4,
-                                      decoration: _decor('Scrivi una breve bio…'),
-                                      onChanged: (v) {
-                                        if (_isEditing) {
-                                          try { cubit.updateBio(v); } catch (_) {}
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Skills: Can Teach
-                            Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const _SectionTitle(icon: Icons.school, title: 'Puoi insegnare'),
-                                    const SizedBox(height: 10),
-                                    EditableSkillList(
-                                      values: u.canTeach,
-                                      isEditing: _isEditing,
-                                      onAdd: () {
-                                        if (!_isEditing) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Attiva "Modifica" per aggiungere.')),
-                                          );
-                                          return;
-                                        }
-                                        _addSkillDialog(
-                                          onConfirm: (s) => context.read<ProfileCubit>().addSkillToTeach(s),
-                                        );
-                                      },
-                                      onRemove: (s) {
-                                        if (!_isEditing) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Attiva "Modifica" per rimuovere.')),
-                                          );
-                                          return;
-                                        }
-                                        final c = context.read<ProfileCubit>();
-                                        c.removeSkillToTeach(s);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Rimossa: $s'),
-                                            action: SnackBarAction(
-                                              label: 'Annulla',
-                                              onPressed: () => c.addSkillToTeach(s),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Skills: Wants To Learn
-                            Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const _SectionTitle(icon: Icons.local_library, title: 'Vuoi imparare'),
-                                    const SizedBox(height: 10),
-                                    EditableSkillList(
-                                      values: u.wantsToLearn,
-                                      isEditing: _isEditing,
-                                      onAdd: () {
-                                        if (!_isEditing) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Attiva "Modifica" per aggiungere.')),
-                                          );
-                                          return;
-                                        }
-                                        _addSkillDialog(
-                                          onConfirm: (s) => context.read<ProfileCubit>().addSkillToLearn(s),
-                                        );
-                                      },
-                                      onRemove: (s) {
-                                        if (!_isEditing) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Attiva "Modifica" per rimuovere.')),
-                                          );
-                                          return;
-                                        }
-                                        final c = context.read<ProfileCubit>();
-                                        c.removeSkillToLearn(s);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Rimossa: $s'),
-                                            action: SnackBarAction(
-                                              label: 'Annulla',
-                                              onPressed: () => c.addSkillToLearn(s),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            Center(
-                              child: FilledButton.icon(
-                                onPressed: _logout,
-                                icon: const Icon(Icons.logout_rounded),
-                                label: const Text(
-                                  'Logout',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.redAccent,
-                                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: const BorderSide(color: Colors.redAccent, width: 1.5),
+
+                                  const SizedBox(height: 12),
+
+                                  // Info base
+                                  _GlassCard(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        const _SectionTitle(
+                                          icon: Icons.badge_outlined,
+                                          title: 'Informazioni di base',
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: _phoneCtrl,
+                                                readOnly: !_isEditing,
+                                                keyboardType:
+                                                TextInputType.phone,
+                                                style: const TextStyle(
+                                                    color: Colors.black87),
+                                                cursorColor:
+                                                BrandPalette.purple,
+                                                decoration:
+                                                _decor('Cellulare'),
+                                                onChanged: (v) {
+                                                  if (_isEditing) {
+                                                    try {
+                                                      cubit.updatePhone(v);
+                                                    } catch (_) {}
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: _isEditing
+                                                    ? () =>
+                                                    _pickBirthDate(cubit)
+                                                    : null,
+                                                child: AbsorbPointer(
+                                                  absorbing: true,
+                                                  child: TextField(
+                                                    style: const TextStyle(
+                                                        color: Colors.black87),
+                                                    decoration: _decor(
+                                                      'Data di nascita',
+                                                      hint: 'aaaa-mm-gg',
+                                                    ),
+                                                    controller:
+                                                    TextEditingController(
+                                                        text:
+                                                        _birthIso ?? ''),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: _cityCtrl,
+                                                readOnly: !_isEditing,
+                                                style: const TextStyle(
+                                                    color: Colors.black87),
+                                                cursorColor:
+                                                BrandPalette.purple,
+                                                decoration: _decor('Città'),
+                                                onChanged: (v) {
+                                                  if (_isEditing) {
+                                                    try {
+                                                      cubit.updateCity(v);
+                                                    } catch (_) {}
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Raggio (km): ${_radiusKm.round()}',
+                                                    style: theme
+                                                        .textTheme.labelLarge
+                                                        ?.copyWith(
+                                                        color: Colors
+                                                            .black87),
+                                                  ),
+                                                  Slider(
+                                                    value: _radiusKm,
+                                                    min: 1,
+                                                    max: 50,
+                                                    divisions: 49,
+                                                    activeColor: BrandPalette
+                                                        .magenta,
+                                                    thumbColor:
+                                                    BrandPalette.orange,
+                                                    label:
+                                                    '${_radiusKm.round()}',
+                                                    onChanged: _isEditing
+                                                        ? (v) {
+                                                      setState(() =>
+                                                      _radiusKm = v);
+                                                      try {
+                                                        cubit
+                                                            .updateRadiusKm(
+                                                            v);
+                                                      } catch (_) {}
+                                                    }
+                                                        : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Bio
+                                  _GlassCard(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        const _SectionTitle(
+                                            icon: Icons.notes, title: 'Bio'),
+                                        const SizedBox(height: 8),
+                                        TextField(
+                                          controller: _bioCtrl,
+                                          readOnly: !_isEditing,
+                                          maxLines: 5,
+                                          minLines: 4,
+                                          style: const TextStyle(
+                                              color: Colors.black87),
+                                          cursorColor: BrandPalette.purple,
+                                          decoration: _decor(
+                                            'Scrivi una breve bio…',
+                                            hint:
+                                            'Chi sei, cosa insegni/cosa cerchi…',
+                                          ),
+                                          onChanged: (v) {
+                                            if (_isEditing) {
+                                              try {
+                                                cubit.updateBio(v);
+                                              } catch (_) {}
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Skills: Can Teach
+                                  _GlassCard(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        const _SectionTitle(
+                                            icon: Icons.school,
+                                            title: 'Puoi insegnare'),
+                                        const SizedBox(height: 10),
+                                        EditableSkillList(
+                                          values: u.canTeach,
+                                          isEditing: _isEditing,
+                                          addLabel: 'Aggiungi competenza',
+                                          onAdd: () {
+                                            if (!_isEditing) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Attiva "Modifica" per aggiungere.'),
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            _addSkillDialog(
+                                              onConfirm: (s) => context
+                                                  .read<ProfileCubit>()
+                                                  .addSkillToTeach(s),
+                                            );
+                                          },
+                                          onRemove: (s) {
+                                            if (!_isEditing) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Attiva "Modifica" per rimuovere.'),
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            final c =
+                                            context.read<ProfileCubit>();
+                                            c.removeSkillToTeach(s);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text('Rimossa: $s'),
+                                                action: SnackBarAction(
+                                                  label: 'Annulla',
+                                                  onPressed: () =>
+                                                      c.addSkillToTeach(s),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: 6),
+                                        if (!_isEditing)
+                                          const Text(
+                                            'Tocca "Modifica" per gestire le competenze.',
+                                            style: TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 12),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  // Skills: Wants To Learn
+                                  _GlassCard(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        const _SectionTitle(
+                                            icon: Icons.local_library,
+                                            title: 'Vuoi imparare'),
+                                        const SizedBox(height: 10),
+                                        EditableSkillList(
+                                          values: u.wantsToLearn,
+                                          isEditing: _isEditing,
+                                          addLabel: 'Aggiungi obiettivo',
+                                          onAdd: () {
+                                            if (!_isEditing) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Attiva "Modifica" per aggiungere.'),
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            _addSkillDialog(
+                                              onConfirm: (s) => context
+                                                  .read<ProfileCubit>()
+                                                  .addSkillToLearn(s),
+                                            );
+                                          },
+                                          onRemove: (s) {
+                                            if (!_isEditing) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Attiva "Modifica" per rimuovere.'),
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            final c =
+                                            context.read<ProfileCubit>();
+                                            c.removeSkillToLearn(s);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text('Rimossa: $s'),
+                                                action: SnackBarAction(
+                                                  label: 'Annulla',
+                                                  onPressed: () =>
+                                                      c.addSkillToLearn(s),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: 6),
+                                        if (!_isEditing)
+                                          const Text(
+                                            'Tocca "Modifica" per gestire gli obiettivi.',
+                                            style: TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 12),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 28),
+
+                                  Center(
+                                    child: FilledButton.icon(
+                                      onPressed: _logout,
+                                      icon: const Icon(Icons.logout_rounded),
+                                      label: const Text(
+                                        'Logout',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: Colors.redAccent,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 32, vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                          BorderRadius.circular(12),
+                                          side: const BorderSide(
+                                              color: Colors.redAccent,
+                                              width: 1.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 24),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
@@ -611,8 +711,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final controller = TextEditingController();
     final res = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Aggiungi una competenza'),
+      builder: (_) => AlertDialog(
+        title: const Text('Aggiungi'),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -638,6 +738,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final t = s.trim();
     if (t.isEmpty) return t;
     return t[0].toUpperCase() + t.substring(1);
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: BrandPalette.subtleBg,
+        color: Colors.white.withOpacity(0.22),
+        border: BrandPalette.glassBorder,
+        boxShadow: BrandPalette.softShadow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: child,
+      ),
+    );
   }
 }
 
@@ -686,8 +809,238 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w800, color: Colors.black87),
         ),
+      ],
+    );
+  }
+}
+
+/// --------------------------
+/// Header responsivo (no overflow)
+/// --------------------------
+class _ProfileHeaderBar extends StatelessWidget {
+  final bool isEditing;
+  final VoidCallback onToggleEdit;
+  final VoidCallback? onSave;
+
+  const _ProfileHeaderBar({
+    required this.isEditing,
+    required this.onToggleEdit,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 420;
+
+        if (!isNarrow) {
+          // Layout ampio: tutto in una riga
+          return Row(
+            children: [
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Profilo',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isEditing) ...[
+                const SizedBox(width: 8),
+                const _EditPill(),
+              ],
+              const SizedBox(width: 8),
+              _SmallTextButton(
+                label: isEditing ? 'Annulla' : 'Modifica',
+                onPressed: onToggleEdit,
+              ),
+              const SizedBox(width: 6),
+              _SmallFilledButton(
+                label: 'Salva',
+                onPressed: onSave,
+              ),
+            ],
+          );
+        }
+
+        // Layout stretto: titolo + pill nella prima riga; bottoni nella seconda
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Profilo',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isEditing) const _EditPill(compact: true),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _SmallTextButton(
+                  label: isEditing ? 'Annulla' : 'Modifica',
+                  onPressed: onToggleEdit,
+                ),
+                const SizedBox(width: 6),
+                _SmallFilledButton(
+                  label: 'Salva',
+                  onPressed: onSave,
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _EditPill extends StatelessWidget {
+  final bool compact;
+  const _EditPill({this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 4 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.38)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.edit, size: 16, color: Colors.white),
+          if (!compact) const SizedBox(width: 6),
+          Text(
+            compact ? 'Modifica' : 'Modifica attiva',
+            style:
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallTextButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  const _SmallTextButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        minimumSize: const Size(0, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _SmallFilledButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  const _SmallFilledButton({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.white,
+        disabledBackgroundColor: Colors.white.withOpacity(0.55),
+        foregroundColor: BrandPalette.purple,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(0, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label),
+    );
+  }
+}
+
+/// Azioni AppBar fallback per lo stato di errore (usa stessi intenti)
+class _ProfileAppBarActions extends StatelessWidget {
+  final bool isEditing;
+  final bool hasUnsavedChanges;
+  final VoidCallback onEnterEdit;
+  final VoidCallback onCancelEdit;
+  final VoidCallback? onSave;
+
+  const _ProfileAppBarActions({
+    required this.isEditing,
+    required this.hasUnsavedChanges,
+    required this.onEnterEdit,
+    required this.onCancelEdit,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (!isEditing)
+          TextButton.icon(
+            onPressed: onEnterEdit,
+            icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+            label: const Text(
+              'Modifica',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          )
+        else ...[
+          TextButton(
+            onPressed: onCancelEdit,
+            child: const Text(
+              'Annulla',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 4),
+          FilledButton(
+            onPressed: hasUnsavedChanges ? onSave : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              disabledBackgroundColor: Colors.white.withOpacity(0.5),
+            ),
+            child: const Text(
+              'Salva',
+              style: TextStyle(
+                color: BrandPalette.purple,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(width: 8),
       ],
     );
   }
