@@ -7,7 +7,7 @@
     "age": 19,
     "location": "Roma",
     "distanceKm": 1.8,
-    "localImages": [
+    "media": [
       "assets/images/users/mario/mario1.jpg",
       "assets/images/users/mario/mario2.jpg",
       "assets/images/users/mario/mario3.jpg",
@@ -27,7 +27,7 @@
     "age": 26,
     "location": "Milano",
     "distanceKm": 2.4,
-    "localImages": [
+    "media": [
       "assets/images/users/laura/laura1.jpg",
       "assets/images/users/laura/laura2.jpg",
       "assets/images/users/laura/laura3.jpg",
@@ -47,7 +47,7 @@
     "age": 24,
     "location": "Torino",
     "distanceKm": 3.1,
-    "localImages": [
+    "media": [
       "assets/images/users/gio/gio1.jpg",
       "assets/images/users/gio/gio2.jpg",
       "assets/images/users/gio/gio3.jpg",
@@ -67,7 +67,7 @@
     "age": 18,
     "location": "Firenze",
     "distanceKm": 0.9,
-    "localImages": [
+    "media": [
       "assets/images/users/anna/anna1.jpg",
       "assets/images/users/anna/anna2.jpg",
       "assets/images/users/anna/anna3.jpg",
@@ -87,7 +87,7 @@
     "age": 30,
     "location": "Napoli",
     "distanceKm": 4.7,
-    "localImages": [
+    "media": [
       "assets/images/users/luca/luca1.jpg",
       "assets/images/users/luca/luca2.jpeg",
       "assets/images/users/luca/luca3.jpg",
@@ -107,7 +107,7 @@
     "age": 22,
     "location": "Bologna",
     "distanceKm": 2.9,
-    "localImages": [
+    "media": [
       "assets/images/users/ame/ame1.jpg",
       "assets/images/users/ame/ame2.jpg",
       "assets/images/users/ame/ame3.jpg",

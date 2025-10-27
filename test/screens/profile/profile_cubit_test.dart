@@ -55,7 +55,7 @@ void main() {
         canTeach: const ['Dart'],
         wantsToLearn: const ['Flutter'],
         onboardingCompleted: true,
-        localImages: [],
+        media: [],
       );
 
       await cubit.loadProfile(userId);
@@ -80,7 +80,7 @@ void main() {
         name: 'Old Name',
         canTeach: const [],
         wantsToLearn: const [],
-        localImages: [],
+        media: [],
       );
 
       await cubit.loadProfile(userId);
@@ -97,7 +97,7 @@ void main() {
         name: 'User',
         canTeach: const [],
         wantsToLearn: const [],
-        localImages: [],
+        media: [],
       );
 
       await cubit.loadProfile(userId);
@@ -118,7 +118,7 @@ void main() {
         name: 'User',
         canTeach: const [],
         wantsToLearn: const [],
-        localImages: [],
+        media: [],
       );
       repository.throwOnSave = true;
 

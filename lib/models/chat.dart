@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
 
 // Modello per un messaggio nella conversazione
 class Message {

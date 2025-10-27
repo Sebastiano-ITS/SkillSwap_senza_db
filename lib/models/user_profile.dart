@@ -39,7 +39,6 @@ class UserProfile {
     this.city,
     this.radiusKm,
     this.bio,
-    required this.localImages,
     this.imageUrl,
     this.media, // <-- opzionale
     required this.canTeach,
@@ -79,7 +78,6 @@ class UserProfile {
       bio: bio ?? this.bio,
       imageUrl: imageUrl ?? this.imageUrl,
       media: media ?? (this.media == null ? null : List<String>.from(this.media!)),
-      localImages: localImages ?? List<String>.from(this.localImages),
       canTeach: canTeach ?? List<String>.from(this.canTeach),
       wantsToLearn: wantsToLearn ?? List<String>.from(this.wantsToLearn),
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
@@ -107,7 +105,6 @@ class UserProfile {
       bio: json['bio'] as String?,
       imageUrl: json['imageUrl'] as String?,
       media: (json['media'] is List) ? List<String>.from(json['media']) : null,
-      localImages: _readStringList(json['localImages']),
       canTeach: List<String>.from(json['canTeach'] ?? []),
       wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
@@ -127,7 +124,6 @@ class UserProfile {
       'city': city,
       'radiusKm': radiusKm,
       'bio': bio,
-      'localImages': localImages,
       'imageUrl': imageUrl,
       'media': media, // <-- nuovo campo persistito
       'canTeach': canTeach,

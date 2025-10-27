@@ -8,7 +8,6 @@ import '../../models/user_profile.dart';
 import '../../theme/brand_palette.dart';
 // componenti condivisi (back + dots)
 import '../../widgets/onboarding_ui.dart';
-import '../../widgets/step_dots.dart' hide StepDots;
 
 class OnboardingTeachScreen extends StatefulWidget {
   const OnboardingTeachScreen({super.key, required this.userId});

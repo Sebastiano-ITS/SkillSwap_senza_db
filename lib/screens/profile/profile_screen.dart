@@ -98,21 +98,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _persistBasics() async {
-    final updated = _user!.copyWith(
-      name: _nameCtrl.text.trim().isEmpty ? _user!.name : _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim().isEmpty ? _user!.email : _emailCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
-      city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-      radiusKm: _radiusKm,
-      birthDateIso: _birthIso,
-      bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
-    );
-    await _saveUser(updated);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo aggiornato')));
-  }
-
   InputDecoration _decor(String label) {
     return InputDecoration(
       labelText: label,

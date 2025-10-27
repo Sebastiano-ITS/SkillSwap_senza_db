@@ -117,7 +117,7 @@ class _ProfileCardState extends State<ProfileCard>
               child: Column(
                 children: [
                   ProfileImageGallery(
-                    images: widget.profile.localImages,
+                    images: widget.profile.media ?? [],
                     onScrolling: (scrolling) =>
                         setState(() => _imageScrolling = scrolling),
                   ),

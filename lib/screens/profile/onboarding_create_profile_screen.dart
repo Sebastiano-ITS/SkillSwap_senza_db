@@ -9,7 +9,6 @@ import '../../models/user_profile.dart';
 
 // ⬇️ componenti condivisi (dots / glass back, qui usiamo solo i dots)
 import '../../widgets/onboarding_ui.dart';
-import '../../widgets/step_dots.dart' hide StepDots;
 
 class OnboardingCreateProfileScreen extends StatefulWidget {
   const OnboardingCreateProfileScreen({super.key, required this.userId});

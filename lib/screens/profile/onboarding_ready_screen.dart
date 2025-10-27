@@ -5,7 +5,6 @@ import '../../data/local_data.dart';
 import '../../models/user_profile.dart';
 import '../../theme/brand_palette.dart';
 import '../../widgets/onboarding_ui.dart';
-import '../../widgets/step_dots.dart' hide StepDots;
 
 class OnboardingReadyScreen extends StatefulWidget {
   const OnboardingReadyScreen({super.key, required this.userId});

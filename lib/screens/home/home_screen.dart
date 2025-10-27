@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
 
 class _HomeView extends StatefulWidget {
   final UserProfile currentUserProfile;
-  const _HomeView({super.key, required this.currentUserProfile});
+  const _HomeView({required this.currentUserProfile});
 
   @override
   State<_HomeView> createState() => _HomeViewState();
