@@ -87,44 +87,77 @@ class _ProfileCardState extends State<ProfileCard>
         offset: widget.isTopCard ? _offset : Offset.zero,
         child: Transform.rotate(
           angle: angle,
-          child: GestureDetector(
-            behavior: HitTestBehavior.deferToChild,
-            onPanStart: widget.isTopCard ? (_) => _animator.stop() : null,
-            onPanUpdate: widget.isTopCard
-                ? (details) {
-              if (_imageScrolling) return;
-              setState(() {
-                _offset += details.delta;
-                if (_offset.dx > _overlayThreshold) {
-                  _overlay = 'like';
-                } else if (_offset.dx < -_overlayThreshold) {
-                  _overlay = 'nope';
-                } else {
-                  _overlay = null;
+          child: Stack(
+            children: [
+              // --- Card principale ---
+              GestureDetector(
+                behavior: HitTestBehavior.deferToChild,
+                onPanStart: widget.isTopCard ? (_) => _animator.stop() : null,
+                onPanUpdate: widget.isTopCard
+                    ? (details) {
+                  if (_imageScrolling) return;
+                  setState(() {
+                    _offset += details.delta;
+                    if (_offset.dx > _overlayThreshold) {
+                      _overlay = 'like';
+                    } else if (_offset.dx < -_overlayThreshold) {
+                      _overlay = 'nope';
+                    } else {
+                      _overlay = null;
+                    }
+                  });
                 }
-              });
-            }
-                : null,
-            onPanEnd: widget.isTopCard ? (_) => _onSwipeEnd() : null,
-            child: Container(
-              width: cardWidth,
-              height: cardHeight,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black26)],
-              ),
-              child: Column(
-                children: [
-                  ProfileImageGallery(
-                    images: widget.profile.media ?? [],
-                    onScrolling: (scrolling) =>
-                        setState(() => _imageScrolling = scrolling),
+                    : null,
+                onPanEnd: widget.isTopCard ? (_) => _onSwipeEnd() : null,
+                child: Container(
+                  width: cardWidth,
+                  height: cardHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(blurRadius: 10, color: Colors.black26),
+                    ],
                   ),
-                  ProfileInfo(profile: widget.profile),
-                ],
+                  child: Column(
+                    children: [
+                      ProfileImageGallery(
+                        images: widget.profile.media ?? [],
+                        onScrolling: (scrolling) =>
+                            setState(() => _imageScrolling = scrolling),
+                      ),
+                      ProfileInfo(profile: widget.profile),
+                    ],
+                  ),
+                ),
               ),
-            ),
+
+              // --- Overlay colore + icona durante il drag ---
+              if (_overlay != null)
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    opacity: 1,
+                    duration: const Duration(milliseconds: 100),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _overlay == 'like'
+                            ? Colors.green.withOpacity(0.35)
+                            : Colors.red.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          _overlay == 'like'
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          size: 100,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

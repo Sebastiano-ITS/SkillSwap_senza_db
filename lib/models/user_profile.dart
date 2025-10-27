@@ -8,20 +8,19 @@ class UserProfile {
   final String? birthDateIso;
   final String? phone;
 
-  // 🔹 Nuovi campi coerenti con users.json
+  // 🔹 Campi coerenti con users.json
   final String? location;
   final double? distanceKm;
 
-  // Campi legacy compatibili
+  // 🔹 Campi legacy compatibili
   final String? city;
   final double? radiusKm;
 
   final String? bio;
   final String? imageUrl;
 
-  /// NUOVO: percorsi locali di foto/video scelti in onboarding (max 6 nello step).
-  /// Salviamo i path come stringhe; in futuro potrai migrare ad URL remoti.
-  final List<String>? media;
+  /// Percorsi locali delle foto o media associati
+  final List<String> media;
 
   final List<String> canTeach;
   final List<String> wantsToLearn;
@@ -40,7 +39,7 @@ class UserProfile {
     this.radiusKm,
     this.bio,
     this.imageUrl,
-    this.media, // <-- opzionale
+    this.media = const [], // 👈 default vuoto, mai null
     required this.canTeach,
     required this.wantsToLearn,
     this.onboardingCompleted = false,
@@ -77,7 +76,7 @@ class UserProfile {
       radiusKm: radiusKm ?? this.radiusKm,
       bio: bio ?? this.bio,
       imageUrl: imageUrl ?? this.imageUrl,
-      media: media ?? (this.media == null ? null : List<String>.from(this.media!)),
+      media: media ?? List<String>.from(this.media),
       canTeach: canTeach ?? List<String>.from(this.canTeach),
       wantsToLearn: wantsToLearn ?? List<String>.from(this.wantsToLearn),
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
@@ -94,17 +93,29 @@ class UserProfile {
           : (json['age'] is String ? int.tryParse(json['age']) : null),
       birthDateIso: json['birthDateIso'] as String?,
       phone: json['phone'] as String?,
-      location: json['location'] as String?,
+
+      // 🔧 Compatibilità: legge location o city
+      location: json['location'] as String? ?? json['city'] as String?,
+
+      // 🔧 Compatibilità: legge distanceKm o radiusKm
       distanceKm: (json['distanceKm'] is num)
           ? (json['distanceKm'] as num).toDouble()
+          : (json['radiusKm'] is num)
+          ? (json['radiusKm'] as num).toDouble()
           : null,
+
+      // Legacy mantenuti
       city: json['city'] as String?,
       radiusKm: (json['radiusKm'] is num)
           ? (json['radiusKm'] as num).toDouble()
           : null,
+
       bio: json['bio'] as String?,
       imageUrl: json['imageUrl'] as String?,
-      media: (json['media'] is List) ? List<String>.from(json['media']) : null,
+
+      // 🔧 Legge media o localImages
+      media: _readStringList(json['media'] ?? json['localImages']),
+
       canTeach: List<String>.from(json['canTeach'] ?? []),
       wantsToLearn: List<String>.from(json['wantsToLearn'] ?? []),
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
@@ -125,7 +136,7 @@ class UserProfile {
       'radiusKm': radiusKm,
       'bio': bio,
       'imageUrl': imageUrl,
-      'media': media, // <-- nuovo campo persistito
+      'media': media,
       'canTeach': canTeach,
       'wantsToLearn': wantsToLearn,
       'onboardingCompleted': onboardingCompleted,

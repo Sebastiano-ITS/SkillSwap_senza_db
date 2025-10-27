@@ -11,7 +11,7 @@ class ProfileInfo extends StatefulWidget {
 
 class _ProfileInfoState extends State<ProfileInfo>
     with SingleTickerProviderStateMixin {
-  AnimationController? _arrowCtrl;
+  late final AnimationController _arrowCtrl;
 
   @override
   void initState() {
@@ -24,18 +24,22 @@ class _ProfileInfoState extends State<ProfileInfo>
 
   @override
   void dispose() {
-    _arrowCtrl?.dispose();
+    _arrowCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
+
+    // ✅ Prende prima location e distanceKm, poi i campi legacy se servono
+    final city = profile.location ?? profile.city ?? 'Località sconosciuta';
+    final distance = profile.distanceKm ?? profile.radiusKm;
+
+    final distanceText =
+    distance != null ? '${distance.toStringAsFixed(1)} km da te' : '';
+
     final age = profile.age != null ? ', ${profile.age}' : '';
-    final city = profile.city ?? 'Località sconosciuta';
-    final distanceText = profile.radiusKm != null
-        ? '${profile.radiusKm!.toStringAsFixed(1)} km da te'
-        : '';
 
     return Expanded(
       child: Padding(
@@ -56,7 +60,6 @@ class _ProfileInfoState extends State<ProfileInfo>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 4),
 
                   // 📍 Città + distanza
@@ -75,15 +78,16 @@ class _ProfileInfoState extends State<ProfileInfo>
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
 
                   // 🧠 Skills che può insegnare
                   if (profile.canTeach.isNotEmpty) ...[
                     const Text(
                       "Skills che può insegnare",
-                      style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -107,8 +111,10 @@ class _ProfileInfoState extends State<ProfileInfo>
                   if (profile.wantsToLearn.isNotEmpty) ...[
                     const Text(
                       "Skills che vuole imparare",
-                      style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -132,8 +138,10 @@ class _ProfileInfoState extends State<ProfileInfo>
                   if (profile.bio != null && profile.bio!.isNotEmpty) ...[
                     const Text(
                       "Bio",
-                      style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -150,34 +158,33 @@ class _ProfileInfoState extends State<ProfileInfo>
               ),
             ),
 
-            // ⬇️ Freccia animata (sempre visibile, stabile)
-            if (_arrowCtrl != null)
-              Positioned(
-                bottom: 8,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _arrowCtrl!,
-                    builder: (context, child) {
-                      final offsetY = 4 * _arrowCtrl!.value;
-                      final opacity = 0.6 +
-                          0.4 * (1 - (_arrowCtrl!.value - 0.5).abs() * 2);
-                      return Opacity(
-                        opacity: opacity,
-                        child: Transform.translate(
-                          offset: Offset(0, offsetY),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.black38,
-                            size: 26,
-                          ),
+            // ⬇️ Freccia animata (sempre visibile)
+            Positioned(
+              bottom: 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _arrowCtrl,
+                  builder: (context, child) {
+                    final offsetY = 4 * _arrowCtrl.value;
+                    final opacity =
+                        0.6 + 0.4 * (1 - (_arrowCtrl.value - 0.5).abs() * 2);
+                    return Opacity(
+                      opacity: opacity,
+                      child: Transform.translate(
+                        offset: Offset(0, offsetY),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.black38,
+                          size: 26,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
+            ),
           ],
         ),
       ),
