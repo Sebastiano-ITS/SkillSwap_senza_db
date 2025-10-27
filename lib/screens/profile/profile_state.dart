@@ -1,15 +1,16 @@
 import 'package:equatable/equatable.dart';
-import 'package:skillswap/models/user_profile.dart';
+import '../../models/user_profile.dart';
 
-enum ProfileStatus { initial, loading, loaded, failure }
+
+enum ProfileStatus { initial, loading, loaded, saving, failure }
 
 class ProfileState extends Equatable {
   const ProfileState({
     required this.status,
     this.profile,
     this.errorMessage,
-    this.isPublic = true,
-    this.acceptsMatches = true,
+    this.feedbackMessage,
+    this.hasUnsavedChanges = false,
   });
 
   factory ProfileState.initial() => const ProfileState(status: ProfileStatus.initial);
@@ -17,41 +18,28 @@ class ProfileState extends Equatable {
   final ProfileStatus status;
   final UserProfile? profile;
   final String? errorMessage;
-  final bool isPublic;
-  final bool acceptsMatches;
+  final String? feedbackMessage;
+  final bool hasUnsavedChanges;
 
   ProfileState copyWith({
     ProfileStatus? status,
     UserProfile? profile,
+    bool clearProfile = false,
+    bool? hasUnsavedChanges,
     String? errorMessage,
-    bool? isPublic,
-    bool? acceptsMatches, required bool clearFeedback,
+    bool clearError = false,
+    String? feedbackMessage,
+    bool clearFeedback = false,
   }) {
     return ProfileState(
       status: status ?? this.status,
-      profile: profile ?? this.profile,
-      errorMessage: errorMessage,
-      isPublic: isPublic ?? this.isPublic,
-      acceptsMatches: acceptsMatches ?? this.acceptsMatches,
-    );
-  }
-
-  factory ProfileState.failure(String message) {
-    return ProfileState(
-      status: ProfileStatus.failure,
-      errorMessage: message,
-      profile: null,
-    );
-  }
-
-  ProfileState withProfile(UserProfile profile) {
-    return copyWith(
-      status: ProfileStatus.loaded,
-      profile: profile,
-      errorMessage: null, clearFeedback: true,
+      profile: clearProfile ? null : (profile ?? this.profile),
+      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      feedbackMessage: clearFeedback ? null : (feedbackMessage ?? this.feedbackMessage),
     );
   }
 
   @override
-  List<Object?> get props => [status, profile, errorMessage, isPublic, acceptsMatches];
+  List<Object?> get props => [status, profile, errorMessage, feedbackMessage, hasUnsavedChanges];
 }

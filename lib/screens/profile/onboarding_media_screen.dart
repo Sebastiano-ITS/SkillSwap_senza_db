@@ -1,24 +1,30 @@
+// lib/screens/profile/onboarding_media_screen.dart
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../data/local_data.dart';
 import '../../models/user_profile.dart';
 import '../../theme/brand_palette.dart';
 import '../../widgets/onboarding_ui.dart';
-import '../../widgets/step_dots.dart' hide StepDots;
 
-class OnboardingReadyScreen extends StatefulWidget {
-  const OnboardingReadyScreen({super.key, required this.userId});
+class OnboardingMediaScreen extends StatefulWidget {
+  const OnboardingMediaScreen({super.key, required this.userId});
   final String userId;
 
   @override
-  State<OnboardingReadyScreen> createState() => _OnboardingReadyScreenState();
+  State<OnboardingMediaScreen> createState() => _OnboardingMediaScreenState();
 }
 
-class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
+class _OnboardingMediaScreenState extends State<OnboardingMediaScreen> {
   late UserProfile _user;
   bool _loading = true;
   String? _error;
+
+  // fino a 6 media
+  final List<File?> _media = List<File?>.filled(6, null);
 
   @override
   void initState() {
@@ -32,14 +38,19 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
       return;
     }
     _user = u;
-    _loading = false;
+    setState(() => _loading = false);
   }
 
-  Future<void> _finish() async {
-    final updated = _user.copyWith(onboardingCompleted: true);
-    await LocalData().saveUser(updated);
+  Future<void> _pickAt(int index) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+    setState(() => _media[index] = File(file.path));
+  }
+
+  Future<void> _continue() async {
     if (!mounted) return;
-    context.go('/home', extra: updated); // passa il profilo alla Home
+    context.go('/onboarding/ready', extra: _user.id);
   }
 
   @override
@@ -52,7 +63,6 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background brand
           Positioned.fill(
             child: Image.asset(
               'assets/images/background_color.png',
@@ -60,10 +70,9 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
               alignment: Alignment.center,
             ),
           ),
-          // Overlay leggibilità
           Container(color: Colors.white.withOpacity(0.30)),
 
-          // ← Back (permesso, l’utente può rivedere i media)
+          // 🔙 Back (con extra!)
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
@@ -71,11 +80,9 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                 padding: const EdgeInsets.all(8),
                 child: GlassIconButton(
                   tooltip: 'Indietro',
-                  overrideRoute: '/onboarding/media',
-                  extra: _user.id,
+                  overrideRoute: '/onboarding/learn',
+                  extra: _user.id, // 👈 passa l'id utente
                 ),
-
-
               ),
             ),
           ),
@@ -88,35 +95,49 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                   constraints: const BoxConstraints(maxWidth: 520),
                   child: _GlassCard(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _VerifiedIllustration(),
-                        const SizedBox(height: 16),
                         Text(
-                          'Pronto a imparare nuove abilità!',
-                          style: theme.textTheme.headlineSmall?.copyWith(
+                          'Aggiungi foto o video di te e delle tue skill!',
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: BrandPalette.purple,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Sei ufficialmente uno Swapper.',
-                          style: theme.textTheme.titleMedium?.copyWith(color: Colors.black87),
-                          textAlign: TextAlign.center,
+                        const SizedBox(height: 16),
+
+                        // griglia 3x2
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: List.generate(
+                            6,
+                                (i) => GestureDetector(
+                              onTap: () => _pickAt(i),
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.75),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: BrandPalette.glassBorder,
+                                  boxShadow: BrandPalette.softShadow,
+                                ),
+                                child: _media[i] == null
+                                    ? const Center(
+                                  child: Icon(Icons.add, color: BrandPalette.purple),
+                                )
+                                    : ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: Image.file(_media[i]!, fit: BoxFit.cover),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '• Trova chi vuole imparare da te.\n'
-                              '• Scopri chi può insegnarti ciò che cerchi.\n'
-                              '• Scambia competenze, cresci ogni giorno.',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                          textAlign: TextAlign.center,
-                        ),
+
                         const SizedBox(height: 22),
 
-                        // CTA
                         SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -133,7 +154,7 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: _finish,
+                              onPressed: _continue,
                               style: ElevatedButton.styleFrom(
                                 elevation: 0,
                                 backgroundColor: Colors.transparent,
@@ -143,7 +164,7 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                                 ),
                               ),
                               child: const Text(
-                                'Inizia',
+                                'Continua',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -156,8 +177,7 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
                         ),
 
                         const SizedBox(height: 16),
-                        // ✅ Dots 5/5
-                        const StepDots(current: 5, total: 5),
+                        const StepDots(current: 4, total: 5),
                       ],
                     ),
                   ),
@@ -171,51 +191,6 @@ class _OnboardingReadyScreenState extends State<OnboardingReadyScreen> {
   }
 }
 
-/// Illustrazione con fallback (senza glow/ombra)
-class _VerifiedIllustration extends StatelessWidget {
-  const _VerifiedIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 220),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Image.asset(
-            'assets/images/verified.png',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) {
-              return Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [BrandPalette.purple, BrandPalette.magenta, BrandPalette.orange],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 110,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.90),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.verified_rounded, size: 72, color: BrandPalette.purple),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Card glass riusabile
 class _GlassCard extends StatelessWidget {
   const _GlassCard({required this.child});
   final Widget child;

@@ -4,7 +4,7 @@ import '../screens/profile/onboarding_learn_screen.dart';
 import '../screens/login_signup/register_screen.dart';
 import '../screens/auth_wrapper.dart';
 import '../screens/login_signup/login_screen.dart';
-import '../screens/profile/onboarding_create_profile_screen.dart'; // ⬅️ import onboarding
+import '../screens/profile/onboarding_create_profile_screen.dart';
 import '../screens/profile/onboarding_teach_screen.dart';
 import '../features/main_shell.dart';
 import '../screens/home/home_screen.dart';
@@ -13,6 +13,9 @@ import '../screens/explore_screen.dart';
 import '../models/user_profile.dart';
 import '../screens/profile/onboarding_ready_screen.dart';
 import '../screens/splash/splash_screen.dart';
+
+// ⬇️ NUOVO
+import '../screens/profile/onboarding_media_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -30,6 +33,19 @@ final GoRouter appRouter = GoRouter(
         }
         return const Scaffold(
           body: Center(child: Text('Utente non fornito per lo step finale.')),
+        );
+      },
+    ),
+    // ⬇️ NUOVO: step media PRIMA della ready
+    GoRoute(
+      path: '/onboarding/media',
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is String && extra.isNotEmpty) {
+          return OnboardingMediaScreen(userId: extra);
+        }
+        return const Scaffold(
+          body: Center(child: Text('Utente non fornito per lo step media.')),
         );
       },
     ),
@@ -57,7 +73,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // Schermate fuori dalla Shell (senza bottom bar)
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthWrapper(),
@@ -73,7 +88,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/onboarding',
       builder: (context, state) {
-        // ci aspettiamo l'userId passato in extra
         final extra = state.extra;
         if (extra is String && extra.isNotEmpty) {
           return OnboardingCreateProfileScreen(userId: extra);
@@ -84,7 +98,7 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // Schermate dentro la Shell (con bottom bar)
+    // Shell con bottom bar
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [

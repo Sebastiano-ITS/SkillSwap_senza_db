@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../data/local_data.dart';
 import '../../models/user_profile.dart';
 import '../../theme/brand_palette.dart';
+// componenti condivisi (back + dots)
+import '../../widgets/onboarding_ui.dart';
+import '../../widgets/step_dots.dart' hide StepDots;
 
 class OnboardingTeachScreen extends StatefulWidget {
   const OnboardingTeachScreen({super.key, required this.userId});
@@ -114,9 +117,6 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
     try {
       await LocalData().saveUser(updated);
       if (!mounted) return;
-
-      // TODO: puoi far proseguire ad uno step successivo (/onboarding/learn).
-      // Per ora andiamo alla Home, coerente con il flusso corrente.
       context.go('/onboarding/learn', extra: updated.id);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +156,7 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background pieno schermo
+          // Background full
           Positioned.fill(
             child: Image.asset(
               'assets/images/background_color.png',
@@ -166,6 +166,22 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
           ),
           // Overlay leggibilità
           Container(color: Colors.white.withOpacity(0.30)),
+
+          // ← Back (step 2+)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: GlassIconButton(
+                  tooltip: 'Indietro',
+                  overrideRoute: '/onboarding',
+                  extra: _user.id,
+                ),
+
+              ),
+            ),
+          ),
 
           SafeArea(
             child: Center(
@@ -197,17 +213,18 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
                           spacing: 12,
                           runSpacing: 12,
                           children: [
-                            for (final s in _suggested) _SkillChip(
-                              label: s,
-                              selected: _selected.contains(s),
-                              onTap: () => setState(() {
-                                if (_selected.contains(s)) {
-                                  _selected.remove(s);
-                                } else {
-                                  _selected.add(s);
-                                }
-                              }),
-                            ),
+                            for (final s in _suggested)
+                              _SkillChip(
+                                label: s,
+                                selected: _selected.contains(s),
+                                onTap: () => setState(() {
+                                  if (_selected.contains(s)) {
+                                    _selected.remove(s);
+                                  } else {
+                                    _selected.add(s);
+                                  }
+                                }),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -283,16 +300,8 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
                         ),
 
                         const SizedBox(height: 16),
-                        // step indicator (2/4 ipotetico)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            _StepDot(active: true),
-                            _StepDot(active: true),
-                            _StepDot(),
-                            _StepDot(),
-                          ],
-                        ),
+                        // ✅ Dots 2/5
+                        const StepDots(current: 2, total: 5),
                       ],
                     ),
                   ),
@@ -306,7 +315,6 @@ class _OnboardingTeachScreenState extends State<OnboardingTeachScreen> {
   }
 }
 
-/// Chip stile brand
 class _SkillChip extends StatelessWidget {
   const _SkillChip({
     required this.label,
@@ -376,25 +384,6 @@ class _GlassCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: child,
         ),
-      ),
-    );
-  }
-}
-
-class _StepDot extends StatelessWidget {
-  const _StepDot({this.active = false});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: active ? 32 : 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: active ? BrandPalette.purple : Colors.black.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

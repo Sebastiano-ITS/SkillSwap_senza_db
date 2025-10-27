@@ -7,6 +7,10 @@ import '../../theme/brand_palette.dart';
 import '../../data/local_data.dart';
 import '../../models/user_profile.dart';
 
+// ⬇️ componenti condivisi (dots / glass back, qui usiamo solo i dots)
+import '../../widgets/onboarding_ui.dart';
+import '../../widgets/step_dots.dart' hide StepDots;
+
 class OnboardingCreateProfileScreen extends StatefulWidget {
   const OnboardingCreateProfileScreen({super.key, required this.userId});
 
@@ -111,7 +115,11 @@ class _OnboardingCreateProfileScreenState
       final updated = _user.copyWith(
         name: _name.text.trim(),
         email: _email.text.trim(),
-        onboardingCompleted: true,
+        phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+        city: _city.text.trim().isEmpty ? null : _city.text.trim(),
+        radiusKm: _radiusKm,
+        birthDateIso: _birthDate?.toIso8601String().substring(0, 10),
+        // lo step finale imposterà onboardingCompleted = true
       );
 
       await LocalData().saveUser(updated);
@@ -140,6 +148,8 @@ class _OnboardingCreateProfileScreenState
             ),
           ),
           Container(color: Colors.white.withOpacity(0.30)),
+
+          // 👉 niente back nello step 1
 
           SafeArea(
             child: Center(
@@ -308,15 +318,9 @@ class _OnboardingCreateProfileScreenState
                         ),
 
                         const SizedBox(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            _StepDot(active: true),
-                            _StepDot(),
-                            _StepDot(),
-                            _StepDot(),
-                          ],
-                        ),
+
+                        // ✅ Dots unificati: 1/5 (niente back in questo step)
+                        const StepDots(current: 1, total: 5),
                       ],
                     ),
                   ),
@@ -412,26 +416,6 @@ class _GradientButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Pallini di avanzamento step
-class _StepDot extends StatelessWidget {
-  const _StepDot({this.active = false});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      width: active ? 32 : 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: active ? BrandPalette.purple : Colors.black.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(8),
       ),
     );
   }
