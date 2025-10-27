@@ -30,6 +30,8 @@ dependencies:
 
   # Icons & Utilities
   lucide_icons: ^0.257.0
+
+  # Navigation
   go_router: ^16.2.5
 
 dev_dependencies:
@@ -72,3 +74,5 @@ flutter:
     - assets/images/users/ame/ame2.jpg
     - assets/images/users/ame/ame3.jpg
     - assets/images/users/ame/ame4.jpg
+    - assets/data/
+    - assets/data/chats.json

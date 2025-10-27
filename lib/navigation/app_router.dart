@@ -21,6 +21,9 @@ import '../screens/profile/onboarding_ready_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../services/auth_service.dart';
 import '../services/match_services.dart';
+import '../screens/chat/chat_list_screen.dart';
+import '../screens/chat/chat_detail_screen.dart';
+import '../models/chat.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -145,9 +148,20 @@ final GoRouter appRouter = GoRouter(
         ),
         GoRoute(
           path: '/chat',
-          builder: (context, state) => const Scaffold(
-            body: Center(child: Text('Chat non disponibile.')),
-          ),
+          builder: (context, state) => const ChatListScreen(),
+          routes: [
+            GoRoute(
+              path: ':id',
+              builder: (context, state) {
+                final id = int.parse(state.pathParameters['id']!);
+                final chat = state.extra as Chat?;
+                if (chat == null || chat.id != id) {
+                  return const Scaffold(body: Center(child: Text('Chat non trovata')));
+                }
+                return ChatDetailScreen(chat: chat);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/profile',

@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "name": "Viola Milano",
+    "avatar": "https://via.placeholder.com/50",
+    "lastMessage": "Iniziamo con le basi della chitarra, poi yoga!",
+    "timestamp": "10:30",
+    "unread": 2,
+    "messages": [
+      {"isMe": false, "text": "Ciao Viola! Su skillswap vedo che fai yoga per relax. Io suono la chitarra acustica. Ti va di scambiare? Ti insegno accordi base se tu mi mostri pose per principianti.", "time": "10:00"},
+      {"isMe": true, "text": "Adoro l'idea! Lo yoga mi aiuta dopo sessioni lunghe, ma non so suonare. Inizia con 'Wonderwall' semplice?", "time": "10:02"},
+      {"isMe": false, "text": "Sì, e ritmi lenti per meditare. Tu prepara una routine anti-stress da 20 min.", "time": "10:05"},
+      {"isMe": true, "text": "Perfetto, focus su respirazione. Quante lezioni pensi?", "time": "10:07"},
+      {"isMe": false, "text": "Una a settimana, via video. Io porto la chitarra, tu il tappetino.", "time": "10:10"},
+      {"isMe": true, "text": "Ok, invio mio orario. Iniziamo con le basi della chitarra, poi yoga!", "time": "10:30"},
+      {"isMe": false, "text": "Entusiasta, a presto!", "time": "10:32"}
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Enrico IlpeloFico",
+    "avatar": "https://via.placeholder.com/50",
+    "lastMessage": "Ricetta tiramisù in cambio di giardinaggio tips",
+    "timestamp": "Ieri",
+    "unread": 0,
+    "messages": [
+      {"isMe": false, "text": "Ehi Enri, cerco qualcuno che insegni ricette di cucina su skillswap. Io ho un pollice verde e posso darti consigli su giardinaggio urbano. Interessato a uno scambio?", "time": "14:00"},
+      {"isMe": true, "text": "Sì! Amo cucinare dolci italiani, ma il mio balcone è un disastro. Iniziamo con come piantare basilico per pesto?", "time": "14:05"},
+      {"isMe": false, "text": "Facile: semi, terra drenante e sole. Tu condividi ricetta tiramisù senza uova?", "time": "14:10"},
+      {"isMe": true, "text": "Senza uova per safety, sì. Aggiungi caffè forte e mascarpone fresco. Quando pratichiamo?", "time": "14:15"},
+      {"isMe": false, "text": "Domenica, mostro il mio orto via foto. Tu prepara ingredienti.", "time": "14:20"},
+      {"isMe": true, "text": "Ok, e tips su pomodori? Ricetta tiramisù in cambio di giardinaggio tips", "time": "18:00"},
+      {"isMe": false, "text": "Sì, concime naturale!", "time": "18:05"},
+      {"isMe": true, "text": "Grazie, utile!", "time": "18:10"}
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Alice Mordenti",
+    "avatar": "https://via.placeholder.com/50",
+    "lastMessage": "Lezioni di francese per foto editing, deal?",
+    "timestamp": "09:15",
+    "unread": 1,
+    "messages": [
+      {"isMe": false, "text": "Ciao Alice! Su skillswap parli francese fluente. Io sono appassionato di fotografia e posso insegnarti editing base con app gratuite. Scambio?", "time": "09:00"},
+      {"isMe": true, "text": "Perfetto! Viaggio spesso in Francia, ma le mie foto sono noiose. Inizia con filtri naturali?", "time": "09:02"},
+      {"isMe": false, "text": "Sì, usa Snapseed per luci e crop. Tu mi dai vocaboli da turista, tipo ordinare cibo.", "time": "09:05"},
+      {"isMe": true, "text": "'Je voudrais un café' e 'merci'. Quanto per una lezione editing?", "time": "09:07"},
+      {"isMe": false, "text": "30 min, poi practice. Fissiamo per giovedì?", "time": "09:10"},
+      {"isMe": true, "text": "Va bene, mando mie foto da editare. Lezioni di francese per foto editing, deal?", "time": "09:15"},
+      {"isMe": false, "text": "Invio app link.", "time": "09:17"}
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Giulia Neri",
+    "avatar": "https://via.placeholder.com/50",
+    "lastMessage": "Cucito base in cambio di routine fitness",
+    "timestamp": "2 giorni fa",
+    "unread": 0,
+    "messages": [
+      {"isMe": false, "text": "Giulia, fai cucito creativo su skillswap? Io sono trainer fitness e posso darti esercizi per postura. Ti va di scambiare skill?", "time": "16:00"},
+      {"isMe": true, "text": "Sì! Cucco vestiti su misura, ma sto male alla schiena da ore sedute. Inizia con stretch per mani?", "time": "16:05"},
+      {"isMe": false, "text": "Ideale per sarti: rotazioni spalle e polsi. Tu mi insegni a fare un portachiavi semplice?", "time": "16:10"},
+      {"isMe": true, "text": "Con feltro e ago, facile. Materiali base: ago, filo colorato. Sessioni?", "time": "16:15"},
+      {"isMe": false, "text": "Una ora, online. Io dimostro plank per core strength.", "time": "16:20"},
+      {"isMe": true, "text": "Ok, preparo ago. Cucito base in cambio di routine fitness", "time": "18:00"},
+      {"isMe": false, "text": "Porta ago!", "time": "18:05"},
+      {"isMe": true, "text": "Haha, sì!", "time": "18:10"},
+      {"isMe": false, "text": "A presto.", "time": "18:12"}
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Ciro XGliAmici Ciruzz",
+    "avatar": "https://via.placeholder.com/50",
+    "lastMessage": "Pittura acrilica per marketing social, sì",
+    "timestamp": "Oggi",
+    "unread": 3,
+    "messages": [
+      {"isMe": false, "text": "Oi ciruzz, dipingi ad acquerello? Io gestisco social media marketing. Scambio: tu mi mostri tecniche base, io ti aiuto con promo per artisti.", "time": "11:00"},
+      {"isMe": true, "text": "Mi piace! Le mie opere non hanno visibilità online. Inizia con come postare su Instagram per engagement?", "time": "11:02"},
+      {"isMe": false, "text": "Hashtag artistici e stories. Tu prepari pennelli e colori per un paesaggio semplice.", "time": "11:05"},
+      {"isMe": true, "text": "Paesaggio piemontese, con laghi. Quanto per un tutorial painting?", "time": "11:08"},
+      {"isMe": false, "text": "45 min, poi feedback social. Fissiamo?", "time": "11:10"},
+      {"isMe": true, "text": "Mercoledì. Pittura acrilica per marketing social, sì", "time": "11:12"},
+      {"isMe": false, "text": "Invio template post.", "time": "11:15"}
+    ]
+  }
+]
