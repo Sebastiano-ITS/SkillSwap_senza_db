@@ -5,7 +5,7 @@ import 'navigation/app_router.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'data/local_data.dart';
-import 'services/local_data_service_explore.dart'; // Importa il nuovo servizio per explore page
+import 'services/local_data_service_explore.dart';
 
 
 void main() async {

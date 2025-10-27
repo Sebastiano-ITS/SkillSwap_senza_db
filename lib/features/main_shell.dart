@@ -1,34 +1,32 @@
-// lib/features/main_shell.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:provider/provider.dart'; // Importa Provider
-import '../services/auth_service.dart'; // Importa AuthService
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
 
+// Shell principale dell'app, include una bottom navigation
 class MainShell extends StatelessWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
-  // Funzione per calcolare l'indice del tab corrente in base alla rotta
+  // Determina quale tab è selezionato in base al percorso attuale
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/explore')) return 1;
     if (location.startsWith('/chat')) return 2;
     if (location.startsWith('/profile')) return 3;
-    return 0; // Default a Home
+    return 0;
   }
 
-  // Funzione chiamata quando un tab viene toccato
+  // Gestisce il tap su un tab della bottom navigation
   void _onTabTapped(int index, BuildContext context) {
-    // --- PASSO CHIAVE DELLA SOLUZIONE ---
-    // 1. Recupera il profilo utente corrente da AuthService.
     final userProfile = context.read<AuthService>().getCurrentUserProfile();
 
-    // 2. Se per qualche motivo il profilo non è disponibile, non fare nulla per sicurezza.
+    // Se non esiste un profilo utente loggato, non fa nulla
     if (userProfile == null) return;
 
-    // 3. Naviga alla rotta corrispondente, passando SEMPRE l'utente come 'extra'.
+    // Naviga alla pagina selezionata, passando il profilo utente come extra
     switch (index) {
       case 0:
         context.go('/home', extra: userProfile);
@@ -49,10 +47,12 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
+
+      // Bottom navigation bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _calculateSelectedIndex(context),
         onTap: (index) => _onTabTapped(index, context),
-        type: BottomNavigationBarType.fixed, // Mantiene i tab visibili
+        type: BottomNavigationBarType.fixed,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         items: const [

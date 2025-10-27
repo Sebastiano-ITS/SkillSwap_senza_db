@@ -1,10 +1,11 @@
+// Modello che rappresenta una richiesta di match tra utenti
 class MatchRequest {
   final String id;
-  final String senderId; // ID di chi invia (il Learner)
-  final String senderName; // Nome di chi invia
-  final String receiverId; // ID di chi riceve (il Teacher)
-  final String skillRequested; // La competenza richiesta (es. 'Programmazione')
-  final String message; // Messaggio opzionale del Learner
+  final String senderId;
+  final String senderName;
+  final String receiverId;
+  final String skillRequested;
+  final String message;
   final DateTime timestamp;
   final bool accepted;
 
@@ -19,7 +20,7 @@ class MatchRequest {
     this.accepted = false,
   });
 
-  // Factory per creare un oggetto da una Map
+  // Crea un'istanza di MatchRequest a partire da una mappa
   factory MatchRequest.fromMap(Map<String, dynamic> data, String id) {
     return MatchRequest(
       id: id,
@@ -28,12 +29,14 @@ class MatchRequest {
       receiverId: data['receiverId'] ?? '',
       skillRequested: data['skillRequested'] ?? 'Sconosciuta',
       message: data['message'] ?? '',
-      timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.parse(
+        data['timestamp'] ?? DateTime.now().toIso8601String(),
+      ),
       accepted: data['accepted'] ?? false,
     );
   }
 
-  // Convertire l'oggetto in Map
+  // Converte l'oggetto in una mappa, utile per il salvataggio su file o database
   Map<String, dynamic> toMap() {
     return {
       'senderId': senderId,

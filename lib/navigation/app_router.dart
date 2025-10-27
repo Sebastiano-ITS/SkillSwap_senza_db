@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../features/profile/user_repository.dart';
 import '../flutter_bloc/home_bloc/home_bloc.dart';
 import '../flutter_bloc/home_bloc/home_event.dart';
+
 import '../screens/profile/onboarding_learn_screen.dart';
 import '../screens/login_signup/register_screen.dart';
 import '../screens/auth_wrapper.dart';
@@ -15,8 +17,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/explore/explore_screen.dart';
 import '../models/user_profile.dart';
-import '../screens/explore/user_list_screen.dart'; // Importa la nuova schermata
-
+import '../screens/explore/user_list_screen.dart';
 import '../screens/profile/onboarding_ready_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../services/auth_service.dart';
@@ -25,16 +26,19 @@ import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_detail_screen.dart';
 import '../models/chat.dart';
 
-// ⬇️ NUOVO
 import '../screens/profile/onboarding_media_screen.dart';
+
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
+    // Schermata di splash
     GoRoute(
       path: '/splash',
       builder: (context, state) => const SplashScreen(),
     ),
+
+    // Schermata finale dell'onboarding
     GoRoute(
       path: '/onboarding/ready',
       builder: (context, state) {
@@ -47,7 +51,8 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // ⬇️ NUOVO: step media PRIMA della ready
+
+    // Step intermedio per caricare media dell'utente
     GoRoute(
       path: '/onboarding/media',
       builder: (context, state) {
@@ -60,6 +65,8 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
+
+    // Step per selezionare cosa si vuole imparare
     GoRoute(
       path: '/onboarding/learn',
       builder: (context, state) {
@@ -72,6 +79,8 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
+
+    // Step per selezionare cosa si può insegnare
     GoRoute(
       path: '/onboarding/teach',
       builder: (context, state) {
@@ -84,18 +93,26 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
+
+    // Wrapper per autenticazione (sceglie login o main)
     GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthWrapper(),
     ),
+
+    // Schermata login
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
     ),
+
+    // Schermata registrazione
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
     ),
+
+    // Step di creazione profilo iniziale
     GoRoute(
       path: '/onboarding',
       builder: (context, state) {
@@ -109,10 +126,11 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
-    // Shell con bottom bar
+    // Shell principale con bottom navigation
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
+        // Schermata home con bloc
         GoRoute(
           path: '/home',
           builder: (context, state) {
@@ -133,26 +151,24 @@ final GoRouter appRouter = GoRouter(
             );
           },
         ),
+
+        // Schermata explore
         GoRoute(
           path: '/explore',
           builder: (context, state) {
-            // 1. Recupera i dati passati durante la navigazione
             final extra = state.extra;
             if (extra is UserProfile) {
-              // 2. Se i dati sono del tipo corretto, passa il profilo a ExploreScreen
               return ExploreScreen(currentUserProfile: extra);
             }
-            // 3. Fallback di sicurezza se i dati non sono disponibili
             return const Scaffold(
               body: Center(child: Text('Dati utente mancanti per la schermata Explore.')),
             );
-
           },
 
-          // Definiamo la rotta della lista utenti come FIGLIA di /explore
+          // elenco utenti per abilità
           routes: [
             GoRoute(
-              path: 'users_by_skill/:skill', // NOTA: Niente '/' all'inizio
+              path: 'users_by_skill/:skill',
               builder: (context, state) {
                 final skill = state.pathParameters['skill'] ?? 'sconosciuta';
                 return UserListScreen(skill: skill);
@@ -160,10 +176,13 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+
+        // Schermata lista chat
         GoRoute(
           path: '/chat',
           builder: (context, state) => const ChatListScreen(),
           routes: [
+            // Schermata dettaglio chat
             GoRoute(
               path: ':id',
               builder: (context, state) {
@@ -177,6 +196,8 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+
+        // Schermata profilo
         GoRoute(
           path: '/profile',
           builder: (context, state) {

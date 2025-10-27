@@ -1,4 +1,3 @@
-// lib/data/local_data.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -9,46 +8,40 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match_request.dart';
 import '../models/user_profile.dart';
 
-/// Storage locale basato su JSON nei Documenti dell'app.
-/// - NESSUN seed dagli asset: alla prima esecuzione crea file vuoti "[]".
-/// - Persistenza sessione con SharedPreferences.
-/// - Email normalizzate (trim + lowercase) e migrazione automatica.
-/// - Merge in saveUser() per non perdere campi extra (es. password, createdAt).
-/// - Login resiliente (se un vecchio utente non ha password, la backfilla con quella digitata).
 class LocalData {
-  // Singleton
+  //Singleton
   static final LocalData _instance = LocalData._internal();
   factory LocalData() => _instance;
   LocalData._internal();
 
-  // Stato in memoria
+  // Liste per utenti e richieste di match
   List<Map<String, dynamic>> _users = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _matchRequests = <Map<String, dynamic>>[];
 
+  // Stato di inizializzazione
   bool _initialized = false;
   Completer<void>? _initializationCompleter;
 
+  // File per memorizzare utenti e match
   late File _usersFile;
   late File _matchRequestsFile;
 
+  // ID dell'utente attualmente loggato
   String? _currentUserId;
   String? get currentUserId => _currentUserId;
-
   bool get isReady => _initialized;
 
-  // Debug: percorsi utili
+  // Getter per il percorso dei file
   String get usersFilePath => _usersFile.path;
   String get matchRequestsFilePath => _matchRequestsFile.path;
 
+  // Normalizza email rimuovendo spazi e rendendola minuscola
   String _normalizeEmail(String e) => e.trim().toLowerCase();
 
-  // --- Init ---------------------------------------------------------------
-
+  // Inizializzazione dei file e caricamento dati
   Future<void> initialize() async {
     if (_initialized) return;
-    if (_initializationCompleter != null) {
-      return _initializationCompleter!.future;
-    }
+    if (_initializationCompleter != null) return _initializationCompleter!.future;
 
     final completer = Completer<void>();
     _initializationCompleter = completer;
@@ -63,7 +56,6 @@ class LocalData {
       _usersFile = File('${dataDir.path}/users.json');
       _matchRequestsFile = File('${dataDir.path}/match_requests.json');
 
-      // Nessun copy from assets: creiamo file vuoti se mancano
       if (!await _usersFile.exists()) {
         await _usersFile.writeAsString('[]');
       }
@@ -74,13 +66,9 @@ class LocalData {
       _users = await _readJsonFile(_usersFile);
       _matchRequests = await _readJsonFile(_matchRequestsFile);
 
-      // Migrazione: normalizza email, elimina duplicati, persiste se cambia
       final bool changed = await _migrateIfNeeded();
-      if (changed) {
-        await _persistUsers();
-      }
+      if (changed) await _persistUsers();
 
-      // Ripristina sessione (se presente)
       final prefs = await SharedPreferences.getInstance();
       _currentUserId = prefs.getString('currentUserId');
 
@@ -94,10 +82,10 @@ class LocalData {
     }
   }
 
+  // Migrazione: normalizza email e rimuove duplicati
   Future<bool> _migrateIfNeeded() async {
     bool mutated = false;
 
-    // 1) Normalizza tutte le email
     for (int i = 0; i < _users.length; i++) {
       final email = (_users[i]['email'] ?? '') as String;
       final norm = _normalizeEmail(email);
@@ -107,7 +95,6 @@ class LocalData {
       }
     }
 
-    // 2) Elimina duplicati per email mantenendo il primo con password non-null
     final Map<String, Map<String, dynamic>> byEmail = {};
     for (final u in _users) {
       final email = _normalizeEmail((u['email'] ?? '') as String);
@@ -116,7 +103,6 @@ class LocalData {
       if (!byEmail.containsKey(email)) {
         byEmail[email] = u;
       } else {
-        // preferisci quello con password valorizzata
         final hasPwd = (byEmail[email]!['password'] ?? '').toString().isNotEmpty;
         final candidateHasPwd = (u['password'] ?? '').toString().isNotEmpty;
         if (!hasPwd && candidateHasPwd) {
@@ -139,6 +125,7 @@ class LocalData {
     return mutated;
   }
 
+  // Lettura da file JSON e parsing in lista di mappe
   Future<List<Map<String, dynamic>>> _readJsonFile(File file) async {
     if (!await file.exists()) return <Map<String, dynamic>>[];
     final String raw = await file.readAsString();
@@ -155,16 +142,19 @@ class LocalData {
     return <Map<String, dynamic>>[];
   }
 
+  // Salva la lista utenti su file
   Future<void> _persistUsers() async {
     if (!_initialized) return;
     await _usersFile.writeAsString(json.encode(_users));
   }
 
+  // Salva la lista richieste di match su file
   Future<void> _persistMatchRequests() async {
     if (!_initialized) return;
     await _matchRequestsFile.writeAsString(json.encode(_matchRequests));
   }
 
+  // Salva o rimuove la sessione corrente
   Future<void> _persistSession(String? userId) async {
     final prefs = await SharedPreferences.getInstance();
     if (userId == null) {
@@ -174,12 +164,12 @@ class LocalData {
     }
   }
 
-  // --- API Utenti ---------------------------------------------------------
-
+  // Restituisce tutti gli utenti
   List<UserProfile> getAllUsers() {
     return _users.map((e) => UserProfile.fromJson(e)).toList();
   }
 
+  // Cerca utente per ID
   UserProfile? getUserById(String userId) {
     final Map<String, dynamic> data = _users.firstWhere(
           (u) => u['id'] == userId,
@@ -189,7 +179,7 @@ class LocalData {
     return UserProfile.fromJson(data);
   }
 
-  /// Crea/Aggiorna utente facendo MERGE con i campi esistenti (preserva password/createdAt).
+  // Salva un utente (nuovo o esistente)
   Future<void> saveUser(UserProfile user) async {
     await initialize();
     final i = _users.indexWhere((u) => u['id'] == user.id);
@@ -203,8 +193,7 @@ class LocalData {
     await _persistUsers();
   }
 
-  /// Login locale: confronta email normalizzata + password.
-  /// Se il profilo esiste ma non ha password (legacy), fa backfill con quella digitata.
+  // Autenticazione email + password
   Future<bool> authenticateUser(String email, String password) async {
     await initialize();
     final norm = _normalizeEmail(email);
@@ -217,8 +206,8 @@ class LocalData {
     final Map<String, dynamic> user = Map<String, dynamic>.from(_users[idx]);
     final String? storedPwd = user['password'] as String?;
 
+    // Se non ha password, la imposta
     if (storedPwd == null || storedPwd.isEmpty) {
-      // backfill (solo per demo locale)
       user['password'] = password;
       _users[idx] = user;
       await _persistUsers();
@@ -227,6 +216,7 @@ class LocalData {
       return true;
     }
 
+    // Se la password coincide
     if (storedPwd == password) {
       _currentUserId = user['id'] as String?;
       await _persistSession(_currentUserId);
@@ -236,7 +226,7 @@ class LocalData {
     return false;
   }
 
-  /// Registrazione: crea un utente nel file locale. Ritorna l'id o null se email già in uso.
+  // Registra un nuovo utente
   Future<String?> registerUser(String email, String password, String name) async {
     await initialize();
     final norm = _normalizeEmail(email);
@@ -251,7 +241,7 @@ class LocalData {
     final Map<String, dynamic> newUser = <String, dynamic>{
       'id': newId,
       'email': norm,
-      'password': password, // demo (in produzione: hashing)
+      'password': password,
       'name': name,
       'createdAt': DateTime.now().toIso8601String(),
       'onboardingCompleted': false,
@@ -267,25 +257,27 @@ class LocalData {
     return newId;
   }
 
+  // Disconnette l'utente corrente
   void signOut() {
     _currentUserId = null;
-    _persistSession(null); // best-effort
+    _persistSession(null);
   }
 
-  // --- API Match ----------------------------------------------------------
-
+  // Restituisce tutte le richieste
   List<MatchRequest> getAllMatchRequests() {
     return _matchRequests
         .map((e) => MatchRequest.fromMap(e, e['id'] ?? ''))
         .toList();
   }
 
+  // Restituisce richieste ricevute non ancora accettate
   List<MatchRequest> getReceivedRequests(String receiverId) {
     return getAllMatchRequests()
         .where((r) => r.receiverId == receiverId && !(r.accepted ?? false))
         .toList();
   }
 
+  // Aggiunge una nuova richiesta di match
   Future<void> addMatchRequest(MatchRequest request) async {
     await initialize();
     final map = request.toMap();
@@ -294,20 +286,18 @@ class LocalData {
     await _persistMatchRequests();
   }
 
+  // Aggiorna lo stato di una richiesta
   Future<void> updateRequestStatus(String requestId, bool accepted) async {
     await initialize();
     final i = _matchRequests.indexWhere((r) => r['id'] == requestId);
     if (i != -1) {
       _matchRequests[i]['accepted'] = accepted;
-      _matchRequests[i]['acceptanceTimestamp'] =
-          DateTime.now().toIso8601String();
+      _matchRequests[i]['acceptanceTimestamp'] = DateTime.now().toIso8601String();
       await _persistMatchRequests();
     }
   }
 
-  // --- Debug / Utility ----------------------------------------------------
-
-  /// AZZERA TUTTO: utenti, richieste e sessione. Usare in debug se vuoi ripartire pulito.
+  // Pulisce tutto (reset app)
   Future<void> resetAll() async {
     await initialize();
     _users = <Map<String, dynamic>>[];
@@ -318,16 +308,14 @@ class LocalData {
     await _persistSession(null);
   }
 
+  // Stampa contenuto del file utenti
   Future<void> debugPrintUsersFile() async {
     await initialize();
     final c = await _usersFile.readAsString();
-    // ignore: avoid_print
     print('Users file path: $usersFilePath');
     if (c.length > 2000) {
-      // ignore: avoid_print
-      print('${c.substring(0, 2000)}... [truncated]');
+      print('${c.substring(0, 2000)}... [troncato]');
     } else {
-      // ignore: avoid_print
       print(c);
     }
   }

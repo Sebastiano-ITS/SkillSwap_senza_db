@@ -1,27 +1,18 @@
+// Modello che rappresenta un profilo utente
 class UserProfile {
   final String id;
   final String email;
   final String name;
-
-  // Campi opzionali allineati all’onboarding
   final int? age;
   final String? birthDateIso;
   final String? phone;
-
-  // 🔹 Campi coerenti con users.json
   final String? location;
   final double? distanceKm;
-
-  // 🔹 Campi legacy compatibili
   final String? city;
   final double? radiusKm;
-
   final String? bio;
   final String? imageUrl;
-
-  /// Percorsi locali delle foto o media associati
   final List<String> media;
-
   final List<String> canTeach;
   final List<String> wantsToLearn;
   final bool onboardingCompleted;
@@ -39,12 +30,13 @@ class UserProfile {
     this.radiusKm,
     this.bio,
     this.imageUrl,
-    this.media = const [], // 👈 default vuoto, mai null
+    this.media = const [],
     required this.canTeach,
     required this.wantsToLearn,
     this.onboardingCompleted = false,
   });
 
+  // Crea una copia del profilo con eventuali modifiche
   UserProfile copyWith({
     String? id,
     String? email,
@@ -83,28 +75,31 @@ class UserProfile {
     );
   }
 
+  // Crea un oggetto UserProfile a partire da un JSON
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? 'Email non disponibile',
       name: json['name'] as String? ?? 'Utente senza nome',
+
+      // Converte l'età da int o da stringa se serve
       age: json['age'] is int
           ? json['age'] as int
           : (json['age'] is String ? int.tryParse(json['age']) : null),
+
       birthDateIso: json['birthDateIso'] as String?,
       phone: json['phone'] as String?,
 
-      // 🔧 Compatibilità: legge location o city
+      // Se location non è disponibile, usa city come fallback
       location: json['location'] as String? ?? json['city'] as String?,
 
-      // 🔧 Compatibilità: legge distanceKm o radiusKm
+      // Calcola la distanza disponibile, compatibile con vecchi campi
       distanceKm: (json['distanceKm'] is num)
           ? (json['distanceKm'] as num).toDouble()
           : (json['radiusKm'] is num)
           ? (json['radiusKm'] as num).toDouble()
           : null,
 
-      // Legacy mantenuti
       city: json['city'] as String?,
       radiusKm: (json['radiusKm'] is num)
           ? (json['radiusKm'] as num).toDouble()
@@ -113,7 +108,7 @@ class UserProfile {
       bio: json['bio'] as String?,
       imageUrl: json['imageUrl'] as String?,
 
-      // 🔧 Legge media o localImages
+      // Media: supporta sia "media" che "localImages"
       media: _readStringList(json['media'] ?? json['localImages']),
 
       canTeach: List<String>.from(json['canTeach'] ?? []),
@@ -122,6 +117,7 @@ class UserProfile {
     );
   }
 
+  // Converte l'oggetto UserProfile in una mappa JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -144,7 +140,7 @@ class UserProfile {
   }
 }
 
-/// Helper per leggere in modo sicuro una lista di stringhe dal JSON
+// Funzione di supporto per convertire una lista dinamica in List<String>
 List<String> _readStringList(dynamic jsonValue) {
   if (jsonValue is List) {
     return List<String>.from(jsonValue.map((item) => item.toString()));

@@ -1,4 +1,3 @@
-// lib/models/explore_category.dart
 import 'package:flutter/material.dart';
 
 // Modello per le grandi card di categoria
