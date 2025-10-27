@@ -130,24 +130,57 @@ class _UserProfileCardState extends State<UserProfileCard> {
   // Stato per gestire l'espansione della bio, specifico per questa card
   bool _isBioExpanded = false;
 
+  // --- 1. STATO PER LA GALLERIA IMMAGINI ---
+  int _currentImageIndex = 0;
+
+  // --- 2. FUNZIONI PER NAVIGARE NELLA GALLERIA ---
+  void _nextImage() {
+    // Va avanti solo se non siamo all'ultima immagine
+    if (_currentImageIndex < widget.user.media.length - 1) {
+      setState(() {
+        _currentImageIndex++;
+      });
+    }
+  }
+
+  void _previousImage() {
+    // Torna indietro solo se non siamo alla prima immagine
+    if (_currentImageIndex > 0) {
+      setState(() {
+        _currentImageIndex--;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-    final bool hasImage = user.imageUrl != null && user.imageUrl!.startsWith('http');
+    final bool hasMedia = user.media.isNotEmpty;
+    // L'immagine di copertina ora dipende dall'indice corrente
+    final String? coverImage = hasMedia ? user.media[_currentImageIndex] : null;
     final bool hasBio = user.bio != null && user.bio!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.all(20.0),
+      clipBehavior: Clip.antiAlias, // Importante per contenere gli indicatori
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(25),
-        color: hasImage ? Colors.grey : Colors.indigo.shade400,
-        image: hasImage ? DecorationImage(image: NetworkImage(user.imageUrl!), fit: BoxFit.cover) : null,
+        color: hasMedia ? Colors.grey : Colors.indigo.shade400,
+        image: hasMedia
+            ? DecorationImage(
+          image: AssetImage(coverImage!),
+          fit: BoxFit.cover,
+        )
+            : null,
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, spreadRadius: 2),
         ],
       ),
       child: Stack(
         children: [
+
+
+
           // Gradiente per la leggibilità del testo
           Container(
             decoration: BoxDecoration(
@@ -161,7 +194,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
             ),
           ),
           // Avatar di fallback se non c'è immagine
-          if (!hasImage)
+          if (!hasMedia)
             Center(
               child: CircleAvatar(
                 radius: 80,
@@ -191,7 +224,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
                     children: [
                       Text(
                         user.bio!,
-                        maxLines: _isBioExpanded ? 100 : 2,
+                        maxLines: _isBioExpanded ? 100 : 10,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 16, color: Colors.white),
                       ),
@@ -206,7 +239,7 @@ class _UserProfileCardState extends State<UserProfileCard> {
                           child: Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
-                              _isBioExpanded ? 'Mostra meno' : '...leggi altro',
+                              _isBioExpanded ? 'Mostra meno' : '',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -227,6 +260,50 @@ class _UserProfileCardState extends State<UserProfileCard> {
               ],
             ),
           ),
+
+          // --- 3. AREE CLICCABILI PER LA NAVIGAZIONE IMMAGINI ---
+          if (hasMedia)
+            Row(
+              children: [
+                // Area sinistra per immagine precedente
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _previousImage,
+                  ),
+                ),
+                // Area destra per immagine successiva
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _nextImage,
+                  ),
+                ),
+              ],
+            ),
+
+          // --- 4. INDICATORI DI PROGRESSIONE IMMAGINE ---
+          if (hasMedia && user.media.length > 1)
+            Positioned(
+              top: 10,
+              left: 10,
+              right: 10,
+              child: Row(
+                children: List.generate(user.media.length, (index) {
+                  return Expanded(
+                    child: Container(
+                      height: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: _currentImageIndex >= index ? Colors.white : Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+
+
         ],
       ),
     );
