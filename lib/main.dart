@@ -36,7 +36,6 @@ class SkillSwapApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Se c'è un errore in fase di init mostriamo una schermata chiara e leggibile
     if (initializationError != null) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -53,7 +52,6 @@ class SkillSwapApp extends StatelessWidget {
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<FirestoreService>(create: (_) => FirestoreService()),
         Provider<LocalDataService>(create: (_) => LocalDataService()),
-        // Se il tuo AuthService espone uno stream di User (Firebase)
         StreamProvider<User?>(
           create: (context) => context.read<AuthService>().userStream,
           initialData: null,
